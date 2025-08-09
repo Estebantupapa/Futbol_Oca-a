@@ -1,21 +1,69 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Dashboard from './Dashboard';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import './login.css'; // Importar tu archivo CSS
+import './login.css';
+import { supabase, getUserProfile, Usuario } from '../supabaseClient';
 
 interface LoginForm {
-  documentoIdentidad: string;
-  contrasena: string;
+  email: string;
+  password: string;
 }
 
 const Login: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState<Usuario | null>(null);
   const [formData, setFormData] = useState<LoginForm>({
-    documentoIdentidad: '',
-    contrasena: ''
+    email: '',
+    password: ''
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  // Verificar si hay una sesión activa al cargar
+  useEffect(() => {
+    checkAuthStatus();
+    
+    // Escuchar cambios en la autenticación
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+          const profile = await getUserProfile();
+          if (profile?.data) {
+            setUser(profile.data);
+            setIsLoggedIn(true);
+          }
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+          setIsLoggedIn(false);
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const checkAuthStatus = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        const profile = await getUserProfile();
+        if (profile?.data && profile.data.activo) {
+          setUser(profile.data);
+          setIsLoggedIn(true);
+        } else if (profile?.data && !profile.data.activo) {
+          // Usuario desactivado
+          await supabase.auth.signOut();
+          setError('Tu cuenta está desactivada. Contacta al administrador.');
+        }
+      }
+    } catch (error) {
+      console.error('Error checking auth status:', error);
+    } finally {
+      setIsCheckingAuth(false);
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -23,7 +71,6 @@ const Login: React.FC = () => {
       ...prev,
       [name]: value
     }));
-    // Limpiar error cuando el usuario empiece a escribir
     if (error) setError('');
   };
 
@@ -33,50 +80,111 @@ const Login: React.FC = () => {
     setIsLoading(true);
 
     // Validaciones básicas
-    if (!formData.documentoIdentidad.trim()) {
-      setError('El documento de identidad es obligatorio');
+    if (!formData.email.trim()) {
+      setError('El email es obligatorio');
       setIsLoading(false);
       return;
     }
 
-    if (!formData.contrasena.trim()) {
+    if (!formData.password.trim()) {
       setError('La contraseña es obligatoria');
       setIsLoading(false);
       return;
     }
 
-    // Simular un pequeño delay para la "autenticación"
-    setTimeout(() => {
-      // Aquí puedes agregar tu lógica de autenticación real
-      // Por ahora, cualquier documento y contraseña válidos funcionarán
-      
-      console.log('Intentando login con:', formData);
-      
-      // Simulación de login exitoso
-      // Puedes cambiar esta lógica por la validación real que necesites
-      if (formData.documentoIdentidad.length >= 3 && formData.contrasena.length >= 3) {
-        setIsLoggedIn(true);
-        console.log('Login exitoso!');
-      } else {
-        setError('Documento o contraseña incorrectos');
+    try {
+      // Intentar login con Supabase
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (authError) {
+        if (authError.message.includes('Invalid login credentials')) {
+          setError('Email o contraseña incorrectos');
+        } else if (authError.message.includes('Email not confirmed')) {
+          setError('Por favor confirma tu email antes de iniciar sesión');
+        } else {
+          setError(authError.message);
+        }
+        setIsLoading(false);
+        return;
       }
-      
+
+      if (data.user) {
+        // Obtener el perfil del usuario
+        const profile = await getUserProfile();
+        
+        if (profile?.error) {
+          setError('Error obteniendo el perfil del usuario');
+          await supabase.auth.signOut();
+          setIsLoading(false);
+          return;
+        }
+
+        if (profile?.data) {
+          if (!profile.data.activo) {
+            setError('Tu cuenta está desactivada. Contacta al administrador.');
+            await supabase.auth.signOut();
+            setIsLoading(false);
+            return;
+          }
+          
+          setUser(profile.data);
+          setIsLoggedIn(true);
+        } else {
+          setError('No se encontró el perfil del usuario');
+          await supabase.auth.signOut();
+        }
+      }
+    } catch (error: any) {
+      console.error('Error during login:', error);
+      setError('Error de conexión. Intenta nuevamente.');
+    } finally {
       setIsLoading(false);
-    }, 1000); // 1 segundo de delay para simular autenticación
+    }
   };
 
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    setFormData({
-      documentoIdentidad: '',
-      contrasena: ''
-    });
-    setError('');
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setIsLoggedIn(false);
+      setUser(null);
+      setFormData({
+        email: '',
+        password: ''
+      });
+      setError('');
+    } catch (error) {
+      console.error('Error during logout:', error);
+    }
   };
+
+  // Mostrar spinner mientras se verifica la autenticación
+  if (isCheckingAuth) {
+    return (
+      <div className="login-container">
+        <div className="login-background">
+          <div className="container-fluid h-100">
+            <div className="row h-100 justify-content-center align-items-center">
+              <div className="col-auto">
+                <div className="text-center">
+                  <div className="spinner-border text-primary" role="status">
+                    <span className="visually-hidden">Cargando...</span>
+                  </div>
+                  <p className="mt-2">Verificando sesión...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Si está logueado, mostrar el Dashboard
-  if (isLoggedIn) {
-    return <Dashboard onLogout={handleLogout} />;
+  if (isLoggedIn && user) {
+    return <Dashboard onLogout={handleLogout} currentUser={user} />;
   }
 
   return (
@@ -115,36 +223,38 @@ const Login: React.FC = () => {
 
                 <form onSubmit={handleSubmit}>
                   <div className="mb-3">
-                    <label htmlFor="documentoIdentidad" className="form-label">
-                      DOCUMENTO DE IDENTIDAD <span className="text-danger">*</span>
+                    <label htmlFor="email" className="form-label">
+                      EMAIL <span className="text-danger">*</span>
                     </label>
                     <input
-                      type="text"
+                      type="email"
                       className="form-control login-input"
-                      id="documentoIdentidad"
-                      name="documentoIdentidad"
-                      value={formData.documentoIdentidad}
+                      id="email"
+                      name="email"
+                      value={formData.email}
                       onChange={handleInputChange}
                       required
                       disabled={isLoading}
-                      placeholder="Ingresa tu documento"
+                      placeholder="admin@futbolocañero.com"
+                      autoComplete="email"
                     />
                   </div>
 
                   <div className="mb-4">
-                    <label htmlFor="contrasena" className="form-label">
+                    <label htmlFor="password" className="form-label">
                       CONTRASEÑA <span className="text-danger">*</span>
                     </label>
                     <input
                       type="password"
                       className="form-control login-input"
-                      id="contrasena"
-                      name="contrasena"
-                      value={formData.contrasena}
+                      id="password"
+                      name="password"
+                      value={formData.password}
                       onChange={handleInputChange}
                       required
                       disabled={isLoading}
                       placeholder="Ingresa tu contraseña"
+                      autoComplete="current-password"
                     />
                   </div>
 
@@ -167,6 +277,13 @@ const Login: React.FC = () => {
                 <div className="login-info-text">
                   Las cuentas solo pueden ser creadas por<br />
                   administradores
+                </div>
+
+                {/* Información de prueba (remover en producción) */}
+                <div className="mt-3 p-2" style={{ background: '#f8f9fa', borderRadius: '4px', fontSize: '12px' }}>
+                  <strong>Credenciales de prueba:</strong><br />
+                  Admin: admin@futbolocañero.com / admin123<br />
+                  Entrenador: entrenador@athletic.com / entrenador123
                 </div>
               </div>
             </div>

@@ -1,235 +1,122 @@
 import React, { useState, useEffect } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
-
-interface Player {
-  id: string;
-  name: string;
-  document: string;
-  avatar: string;
-  firstName: string;
-  lastName: string;
-  birthDate: string;
-  country: string;
-  department: string;
-  city: string;
-  category: string;
-  club: string;
-  eps: string;
-  epsType: string;
-}
+import './Dashboard.css';
+import { 
+  getAllJugadores, 
+  getJugadoresByEscuela, 
+  getCategorias, 
+  getEscuelas, 
+  createJugador,
+  updateJugador,
+  deleteJugador,
+  Usuario,
+  Jugador,
+  Categoria,
+  Escuela,
+  JugadorInsert
+} from '../supabaseClient';
 
 interface DashboardProps {
   onLogout: () => void;
+  currentUser: Usuario;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
+const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedDocument, setSelectedDocument] = useState('0000000000');
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [filteredPlayers, setFilteredPlayers] = useState<Player[]>([]);
+  const [selectedDocument, setSelectedDocument] = useState('');
+  const [players, setPlayers] = useState<Jugador[]>([]);
+  const [filteredPlayers, setFilteredPlayers] = useState<Jugador[]>([]);
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [escuelas, setEscuelas] = useState<Escuela[]>([]);
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+  const [selectedPlayer, setSelectedPlayer] = useState<Jugador | null>(null);
   const [showPlayerModal, setShowPlayerModal] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchResult, setSearchResult] = useState<{
     found: boolean;
-    player?: Player;
+    player?: Jugador;
     message: string;
   } | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [newPlayer, setNewPlayer] = useState({
-    id: '',
-    name: '',
-    document: '',
-    avatar: '/src/assets/default-avatar.png',
-    firstName: '',
-    lastName: '',
-    birthDate: '',
-    country: '',
-    department: '',
-    city: '',
-    category: '',
-    club: '',
+  const [isEditing, setIsEditing] = useState(false);
+  const [newPlayer, setNewPlayer] = useState<Partial<JugadorInsert>>({
+    documento: '',
+    nombre: '',
+    apellido: '',
+    fecha_nacimiento: '',
+    pais: 'Colombia',
+    departamento: 'Norte de Santander',
+    ciudad: 'Ocaña',
+    categoria_id: '',
+    escuela_id: currentUser.rol === 'entrenador' ? currentUser.escuela_id || '' : '',
     eps: '',
-    epsType: ''
+    tipo_eps: 'Subsidiado'
   });
 
-  // Datos de ejemplo de los jugadores
+  // Cargar datos iniciales
   useEffect(() => {
-    const mockPlayers: Player[] = [
-      {
-        id: '1',
-        name: 'SEBASTIAN DAVID PULIDO PARRA',
-        document: '5863706',
-        avatar: '/src/assets/avatar1.png',
-        firstName: 'SEBASTIAN DAVID',
-        lastName: 'PULIDO PARRA',
-        birthDate: '21/12/2012',
-        country: 'Colombia',
-        department: 'Norte de Santander',
-        city: 'Ocaña',
-        category: 'Infantil Proceso',
-        club: 'Athletic FC',
-        eps: 'nueva eps',
-        epsType: 'Subsidiado'
-      },
-      {
-        id: '2',
-        name: 'SERGIO ANDRES ARIAS CLAVIJO',
-        document: '1092183395',
-        avatar: '/src/assets/avatar2.png',
-        firstName: 'SERGIO ANDRES',
-        lastName: 'ARIAS CLAVIJO',
-        birthDate: '15/08/2011',
-        country: 'Colombia',
-        department: 'Norte de Santander',
-        city: 'Ocaña',
-        category: 'Infantil Proceso',
-        club: 'Athletic FC',
-        eps: 'nueva eps',
-        epsType: 'Subsidiado'
-      },
-      {
-        id: '3',
-        name: 'RHONUM FRAMEL SALAS BALLESTEROS',
-        document: '1092183896',
-        avatar: '/src/assets/avatar3.png',
-        firstName: 'RHONUM FRAMEL',
-        lastName: 'SALAS BALLESTEROS',
-        birthDate: '03/05/2012',
-        country: 'Colombia',
-        department: 'Norte de Santander',
-        city: 'Ocaña',
-        category: 'Infantil Proceso',
-        club: 'Athletic FC',
-        eps: 'nueva eps',
-        epsType: 'Subsidiado'
-      },
-      {
-        id: '4',
-        name: 'RAFAEL DAVID GALVAN ORTIZ',
-        document: '1092737543',
-        avatar: '/src/assets/avatar4.png',
-        firstName: 'RAFAEL DAVID',
-        lastName: 'GALVAN ORTIZ',
-        birthDate: '28/09/2011',
-        country: 'Colombia',
-        department: 'Norte de Santander',
-        city: 'Ocaña',
-        category: 'Infantil Proceso',
-        club: 'Athletic FC',
-        eps: 'nueva eps',
-        epsType: 'Subsidiado'
-      },
-      {
-        id: '5',
-        name: 'JOHAN SEBASTIAN CASTELLANO ROJAS',
-        document: '1092737325',
-        avatar: '/src/assets/avatar5.png',
-        firstName: 'JOHAN SEBASTIAN',
-        lastName: 'CASTELLANO ROJAS',
-        birthDate: '12/03/2012',
-        country: 'Colombia',
-        department: 'Norte de Santander',
-        city: 'Ocaña',
-        category: 'Infantil Proceso',
-        club: 'Athletic FC',
-        eps: 'nueva eps',
-        epsType: 'Subsidiado'
-      },
-      {
-        id: '6',
-        name: 'MATHIAS JOSE PAREDES VANEGAS',
-        document: '1091671408',
-        avatar: '/src/assets/avatar6.png',
-        firstName: 'MATHIAS JOSE',
-        lastName: 'PAREDES VANEGAS',
-        birthDate: '07/11/2011',
-        country: 'Colombia',
-        department: 'Norte de Santander',
-        city: 'Ocaña',
-        category: 'Infantil Proceso',
-        club: 'Athletic FC',
-        eps: 'nueva eps',
-        epsType: 'Subsidiado'
-      },
-      {
-        id: '7',
-        name: 'SERGIO ESTEBAN BARBOSA SANCHEZ',
-        document: '1097115362',
-        avatar: '/src/assets/avatar7.png',
-        firstName: 'SERGIO ESTEBAN',
-        lastName: 'BARBOSA SANCHEZ',
-        birthDate: '19/06/2012',
-        country: 'Colombia',
-        department: 'Norte de Santander',
-        city: 'Ocaña',
-        category: 'Infantil Proceso',
-        club: 'Athletic FC',
-        eps: 'nueva eps',
-        epsType: 'Subsidiado'
-      },
-      {
-        id: '8',
-        name: 'PHIER SANTIAGO SANCHEZ ALFONSO',
-        document: '1091672072',
-        avatar: '/src/assets/avatar8.png',
-        firstName: 'PHIER SANTIAGO',
-        lastName: 'SANCHEZ ALFONSO',
-        birthDate: '25/01/2012',
-        country: 'Colombia',
-        department: 'Norte de Santander',
-        city: 'Ocaña',
-        category: 'Infantil Proceso',
-        club: 'Athletic FC',
-        eps: 'nueva eps',
-        epsType: 'Subsidiado'
-      },
-      {
-        id: '9',
-        name: 'KATHERIN PEREZ CACERES',
-        document: '1092184765',
-        avatar: '/src/assets/avatar9.png',
-        firstName: 'KATHERIN',
-        lastName: 'PEREZ CACERES',
-        birthDate: '14/04/2012',
-        country: 'Colombia',
-        department: 'Norte de Santander',
-        city: 'Ocaña',
-        category: 'Infantil Proceso',
-        club: 'Athletic FC',
-        eps: 'nueva eps',
-        epsType: 'Subsidiado'
-      },
-      {
-        id: '10',
-        name: 'DIEGO ALEJANDRO PABON RANGEL',
-        document: '1092190584',
-        avatar: '/src/assets/avatar10.png',
-        firstName: 'DIEGO ALEJANDRO',
-        lastName: 'PABON RANGEL',
-        birthDate: '30/10/2011',
-        country: 'Colombia',
-        department: 'Norte de Santander',
-        city: 'Ocaña',
-        category: 'Infantil Proceso',
-        club: 'Athletic FC',
-        eps: 'nueva eps',
-        epsType: 'Subsidiado'
-      }
-    ];
-    
-    setPlayers(mockPlayers);
-    setFilteredPlayers(mockPlayers);
-  }, []);
+    loadInitialData();
+  }, [currentUser]);
 
   // Filtrar jugadores basado en la búsqueda
   useEffect(() => {
     const filtered = players.filter(player =>
-      player.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      player.document.includes(searchTerm)
+      `${player.nombre} ${player.apellido}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      player.documento.includes(searchTerm)
     );
     setFilteredPlayers(filtered);
   }, [searchTerm, players]);
+
+  const loadInitialData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Cargar categorías y escuelas
+      const [categoriasResult, escuelasResult] = await Promise.all([
+        getCategorias(),
+        getEscuelas()
+      ]);
+
+      if (categoriasResult.error) throw categoriasResult.error;
+      if (escuelasResult.error) throw escuelasResult.error;
+
+      setCategorias(categoriasResult.data || []);
+      setEscuelas(escuelasResult.data || []);
+
+      // Cargar jugadores según el rol del usuario
+      await loadPlayers();
+
+    } catch (err: any) {
+      console.error('Error loading initial data:', err);
+      setError(err.message || 'Error cargando datos iniciales');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadPlayers = async () => {
+    try {
+      let playersResult;
+
+      if (currentUser.rol === 'admin') {
+        playersResult = await getAllJugadores();
+      } else if (currentUser.escuela_id) {
+        playersResult = await getJugadoresByEscuela(currentUser.escuela_id);
+      } else {
+        throw new Error('No se pudo determinar la escuela del usuario');
+      }
+
+      if (playersResult.error) throw playersResult.error;
+
+      setPlayers(playersResult.data || []);
+      setFilteredPlayers(playersResult.data || []);
+    } catch (err: any) {
+      console.error('Error loading players:', err);
+      setError(err.message || 'Error cargando jugadores');
+    }
+  };
 
   const handleLogout = () => {
     onLogout();
@@ -248,13 +135,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
     setSelectedDocument(value);
     
     if (value.trim()) {
-      const foundPlayer = players.find(player => player.document === value.trim());
+      const foundPlayer = players.find(player => player.documento === value.trim());
       
       if (foundPlayer) {
         setSearchResult({
           found: true,
           player: foundPlayer,
-          message: `Jugador encontrado en el equipo ${foundPlayer.club}`
+          message: `Jugador encontrado en ${foundPlayer.escuela?.nombre || 'la escuela'}`
         });
       } else {
         setSearchResult({
@@ -271,50 +158,176 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
     setIsDarkMode(!isDarkMode);
   };
 
-  const handlePlayerClick = (player: Player) => {
+  const handlePlayerClick = (player: Jugador) => {
     setSelectedPlayer(player);
     setShowPlayerModal(true);
+    setIsEditing(false);
   };
 
   const closePlayerModal = () => {
     setShowPlayerModal(false);
     setSelectedPlayer(null);
+    setIsEditing(false);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setNewPlayer(prev => ({
       ...prev,
-      [name]: value,
-      name: `${prev.firstName} ${prev.lastName}`.trim() || prev.name
+      [name]: value
     }));
   };
 
-  const handleAddPlayer = (e: React.FormEvent) => {
-    e.preventDefault();
-    const newId = (players.length + 1).toString();
-    setPlayers(prev => [...prev, { ...newPlayer, id: newId }]);
-    setFilteredPlayers(prev => [...prev, { ...newPlayer, id: newId }]);
-    setShowAddModal(false);
-    setNewPlayer({
-      id: '',
-      name: '',
-      document: '',
-      avatar: '/src/assets/default-avatar.png',
-      firstName: '',
-      lastName: '',
-      birthDate: '',
-      country: '',
-      department: '',
-      city: '',
-      category: '',
-      club: '',
-      eps: '',
-      epsType: ''
-    });
-    setSearchResult(null);
-    setSelectedDocument('0000000000');
+  const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    if (selectedPlayer) {
+      setSelectedPlayer(prev => prev ? {
+        ...prev,
+        [name]: value
+      } : null);
+    }
   };
+
+  const handleAddPlayer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      // Validar campos requeridos
+      if (!newPlayer.documento || !newPlayer.nombre || !newPlayer.apellido || 
+          !newPlayer.fecha_nacimiento || !newPlayer.categoria_id || 
+          !newPlayer.escuela_id || !newPlayer.eps) {
+        setError('Todos los campos son obligatorios');
+        return;
+      }
+
+      const playerData: JugadorInsert = {
+        documento: newPlayer.documento,
+        nombre: newPlayer.nombre,
+        apellido: newPlayer.apellido,
+        fecha_nacimiento: newPlayer.fecha_nacimiento,
+        pais: newPlayer.pais || 'Colombia',
+        departamento: newPlayer.departamento || 'Norte de Santander',
+        ciudad: newPlayer.ciudad || 'Ocaña',
+        categoria_id: newPlayer.categoria_id,
+        escuela_id: newPlayer.escuela_id,
+        eps: newPlayer.eps,
+        tipo_eps: newPlayer.tipo_eps || 'Subsidiado'
+      };
+
+      const result = await createJugador(playerData);
+      
+      if (result.error) {
+        if (result.error.code === '23505') {
+          setError('Ya existe un jugador con este documento');
+        } else {
+          throw result.error;
+        }
+        return;
+      }
+      
+      // Recargar jugadores
+      await loadPlayers();
+      
+      setShowAddModal(false);
+      setNewPlayer({
+        documento: '',
+        nombre: '',
+        apellido: '',
+        fecha_nacimiento: '',
+        pais: 'Colombia',
+        departamento: 'Norte de Santander',
+        ciudad: 'Ocaña',
+        categoria_id: '',
+        escuela_id: currentUser.rol === 'entrenador' ? currentUser.escuela_id || '' : '',
+        eps: '',
+        tipo_eps: 'Subsidiado'
+      });
+      setError(null);
+      
+    } catch (err: any) {
+      console.error('Error adding player:', err);
+      setError(err.message || 'Error agregando jugador');
+    }
+  };
+
+  const handleUpdatePlayer = async () => {
+    if (!selectedPlayer) return;
+
+    try {
+      const updates = {
+        nombre: selectedPlayer.nombre,
+        apellido: selectedPlayer.apellido,
+        fecha_nacimiento: selectedPlayer.fecha_nacimiento,
+        pais: selectedPlayer.pais,
+        departamento: selectedPlayer.departamento,
+        ciudad: selectedPlayer.ciudad,
+        eps: selectedPlayer.eps,
+        tipo_eps: selectedPlayer.tipo_eps
+      };
+
+      const result = await updateJugador(selectedPlayer.id, updates);
+      
+      if (result.error) throw result.error;
+      
+      // Recargar jugadores
+      await loadPlayers();
+      setIsEditing(false);
+      setError(null);
+      
+    } catch (err: any) {
+      console.error('Error updating player:', err);
+      setError(err.message || 'Error actualizando jugador');
+    }
+  };
+
+  const handleDeletePlayer = async (playerId: string) => {
+    if (!confirm('¿Estás seguro de que deseas eliminar este jugador?')) return;
+
+    try {
+      const result = await deleteJugador(playerId);
+      
+      if (result.error) throw result.error;
+      
+      // Recargar jugadores
+      await loadPlayers();
+      closePlayerModal();
+      setError(null);
+      
+    } catch (err: any) {
+      console.error('Error deleting player:', err);
+      setError(err.message || 'Error eliminando jugador');
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('es-CO');
+  };
+
+  const calculateAge = (birthDate: string) => {
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    
+    return age;
+  };
+
+  if (loading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>
+        <div className="text-center">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Cargando...</span>
+          </div>
+          <p className="mt-2">Cargando datos...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`dashboard-container ${isDarkMode ? 'dark-theme' : ''}`}>
@@ -341,6 +354,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
             <div className="col"></div>
             <div className="col-auto">
               <div className="user-section d-flex align-items-center">
+                <span className="badge bg-primary me-3">
+                  {currentUser.rol === 'admin' ? 'Administrador' : 'Entrenador'}
+                </span>
+                {currentUser.escuela && (
+                  <span className="badge bg-secondary me-3">
+                    {currentUser.escuela.nombre}
+                  </span>
+                )}
                 <button 
                   className="btn btn-sm theme-toggle me-3"
                   onClick={toggleDarkMode}
@@ -354,12 +375,23 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
                 >
                   Cerrar Sesión
                 </button>
-                <span className="user-name">Jorge</span>
+                <span className="user-name">{currentUser.nombre} {currentUser.apellido}</span>
               </div>
             </div>
           </div>
         </div>
       </header>
+
+      {error && (
+        <div className="alert alert-danger m-3" role="alert">
+          {error}
+          <button 
+            type="button" 
+            className="btn-close" 
+            onClick={() => setError(null)}
+          ></button>
+        </div>
+      )}
 
       <div className="dashboard-body">
         <div className="container-fluid h-100">
@@ -376,7 +408,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
                       <input
                         type="text"
                         className="form-control search-input"
-                        placeholder="Buscar..."
+                        placeholder="Buscar jugador..."
                         value={searchTerm}
                         onChange={handleSearchChange}
                       />
@@ -390,6 +422,16 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
                       )}
                     </div>
                   </div>
+                  
+                  {/* Estadísticas rápidas */}
+                  <div className="stats-section mb-3">
+                    <div className="small text-muted">
+                      Total jugadores: <strong>{filteredPlayers.length}</strong>
+                      {currentUser.rol === 'admin' && (
+                        <span> de {players.length}</span>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 <div className="players-list">
@@ -400,27 +442,34 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
                       onClick={() => handlePlayerClick(player)}
                     >
                       <div className="player-avatar">
-                        <img 
-                          src={player.avatar} 
-                          alt={player.name}
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = 'https://via.placeholder.com/40x40/cccccc/666666?text=👤';
-                          }}
-                        />
+                        <div className="avatar-placeholder">
+                          👤
+                        </div>
                       </div>
                       <div className="player-info">
-                        <div className="player-document">{player.document}</div>
-                        <div className="player-name">{player.name}</div>
+                        <div className="player-document">{player.documento}</div>
+                        <div className="player-name">{player.nombre} {player.apellido}</div>
+                        <div className="player-category">
+                          <small className="text-muted">{player.categoria?.nombre}</small>
+                        </div>
                       </div>
                     </div>
                   ))}
+                  
+                  {filteredPlayers.length === 0 && !loading && (
+                    <div className="text-center py-4">
+                      <div className="text-muted">
+                        {searchTerm ? 'No se encontraron jugadores' : 'No hay jugadores registrados'}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <button
                   className="btn btn-primary w-100 mt-3"
                   onClick={() => setShowAddModal(true)}
                 >
-                  Agregar Jugador
+                  ➕ Agregar Jugador
                 </button>
               </div>
             </div>
@@ -429,7 +478,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
             <div className="col-lg-8 col-xl-9">
               <div className="main-content">
                 <div className="search-document-section">
-                  <h4 className="section-title">BUSCAR POR DOCUMENTO</h4>
+                  <h4 className="section-title">BÚSQUEDA POR DOCUMENTO</h4>
                   
                   <div className="document-search-form">
                     <label htmlFor="documento" className="form-label">DOCUMENTO</label>
@@ -441,7 +490,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
                         id="documento"
                         value={selectedDocument}
                         onChange={handleDocumentChange}
-                        placeholder="0000000000"
+                        placeholder="Ingrese número de documento"
                       />
                     </div>
                   </div>
@@ -450,14 +499,57 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
                     <div className="search-result mt-3">
                       {searchResult.found ? (
                         <div className="alert alert-success py-2 px-3">
-                          <p>Jugador encontrado: {searchResult.player?.name}</p>
-                          <p>Equipo/Club: {searchResult.player?.club}</p>
+                          <h6 className="mb-1">✅ Jugador encontrado</h6>
+                          <p className="mb-1"><strong>Nombre:</strong> {searchResult.player?.nombre} {searchResult.player?.apellido}</p>
+                          <p className="mb-1"><strong>Escuela:</strong> {searchResult.player?.escuela?.nombre}</p>
+                          <p className="mb-0"><strong>Categoría:</strong> {searchResult.player?.categoria?.nombre}</p>
+                          <button 
+                            className="btn btn-sm btn-outline-primary mt-2"
+                            onClick={() => searchResult.player && handlePlayerClick(searchResult.player)}
+                          >
+                            Ver detalles
+                          </button>
                         </div>
                       ) : (
                         <div className="alert alert-warning py-2 px-3">
-                          <p>{searchResult.message}</p>
+                          <p className="mb-0">❌ {searchResult.message}</p>
                         </div>
                       )}
+                    </div>
+                  )}
+                  
+                  {/* Panel de estadísticas para admins */}
+                  {currentUser.rol === 'admin' && (
+                    <div className="stats-panel mt-4">
+                      <h5>Estadísticas Generales</h5>
+                      <div className="row">
+                        <div className="col-md-3">
+                          <div className="stat-card">
+                            <div className="stat-number">{players.length}</div>
+                            <div className="stat-label">Total Jugadores</div>
+                          </div>
+                        </div>
+                        <div className="col-md-3">
+                          <div className="stat-card">
+                            <div className="stat-number">{escuelas.length}</div>
+                            <div className="stat-label">Escuelas Activas</div>
+                          </div>
+                        </div>
+                        <div className="col-md-3">
+                          <div className="stat-card">
+                            <div className="stat-number">{categorias.length}</div>
+                            <div className="stat-label">Categorías</div>
+                          </div>
+                        </div>
+                        <div className="col-md-3">
+                          <div className="stat-card">
+                            <div className="stat-number">
+                              {new Set(players.map(p => p.categoria_id)).size}
+                            </div>
+                            <div className="stat-label">Categorías Activas</div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -472,10 +564,46 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
         <div className="modal-overlay" onClick={closePlayerModal}>
           <div className="player-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 className="modal-title">INFORMACIÓN DEL USUARIO</h3>
-              <button className="close-button" onClick={closePlayerModal}>
-                ✕
-              </button>
+              <h3 className="modal-title">INFORMACIÓN DEL JUGADOR</h3>
+              <div className="d-flex align-items-center">
+                {!isEditing ? (
+                  <button 
+                    className="btn btn-sm btn-outline-primary me-2"
+                    onClick={() => setIsEditing(true)}
+                  >
+                    ✏️ Editar
+                  </button>
+                ) : (
+                  <>
+                    <button 
+                      className="btn btn-sm btn-success me-2"
+                      onClick={handleUpdatePlayer}
+                    >
+                      💾 Guardar
+                    </button>
+                    <button 
+                      className="btn btn-sm btn-secondary me-2"
+                      onClick={() => {
+                        setIsEditing(false);
+                        // Recargar datos del jugador
+                        const originalPlayer = players.find(p => p.id === selectedPlayer.id);
+                        if (originalPlayer) setSelectedPlayer(originalPlayer);
+                      }}
+                    >
+                      ✕ Cancelar
+                    </button>
+                  </>
+                )}
+                <button 
+                  className="btn btn-sm btn-danger me-2"
+                  onClick={() => handleDeletePlayer(selectedPlayer.id)}
+                >
+                  🗑️ Eliminar
+                </button>
+                <button className="close-button" onClick={closePlayerModal}>
+                  ✕
+                </button>
+              </div>
             </div>
 
             <div className="modal-body">
@@ -484,15 +612,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
                   <div className="photo-section">
                     <h5>FOTO</h5>
                     <div className="photo-container">
-                      <img 
-                        src={selectedPlayer.avatar} 
-                        alt={selectedPlayer.name}
-                        className="player-photo"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150x150/cccccc/666666?text=👤';
-                        }}
-                      />
-                      <button className="photo-search-btn">🔍</button>
+                      <div className="player-photo-placeholder">
+                        👤
+                      </div>
+                      <div className="mt-2">
+                        <small className="text-muted">
+                          Edad: {calculateAge(selectedPlayer.fecha_nacimiento)} años
+                        </small>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -501,51 +628,53 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
                   <div className="info-section">
                     <div className="info-field">
                       <label>DOCUMENTO</label>
-                      <div className="input-group">
-                        <input 
-                          type="text" 
-                          value={selectedPlayer.document} 
-                          readOnly 
-                          className="form-control readonly-input"
-                        />
-                        <button className="input-group-btn">✏️</button>
-                      </div>
+                      <input 
+                        type="text" 
+                        value={selectedPlayer.documento} 
+                        readOnly 
+                        className="form-control readonly-input"
+                      />
                     </div>
 
                     <div className="row">
-                      <div className="col-md-4">
+                      <div className="col-md-6">
                         <div className="info-field">
                           <label>NOMBRE</label>
                           <input 
                             type="text" 
-                            value={selectedPlayer.firstName} 
-                            readOnly 
-                            className="form-control readonly-input"
+                            name="nombre"
+                            value={selectedPlayer.nombre} 
+                            onChange={handleEditInputChange}
+                            readOnly={!isEditing}
+                            className={`form-control ${!isEditing ? 'readonly-input' : ''}`}
                           />
                         </div>
                       </div>
-                      <div className="col-md-4">
+                      <div className="col-md-6">
                         <div className="info-field">
                           <label>APELLIDO</label>
                           <input 
                             type="text" 
-                            value={selectedPlayer.lastName} 
-                            readOnly 
-                            className="form-control readonly-input"
+                            name="apellido"
+                            value={selectedPlayer.apellido} 
+                            onChange={handleEditInputChange}
+                            readOnly={!isEditing}
+                            className={`form-control ${!isEditing ? 'readonly-input' : ''}`}
                           />
                         </div>
                       </div>
-                      <div className="col-md-4">
-                        <div className="info-field">
-                          <label>NACIMIENTO</label>
-                          <input 
-                            type="text" 
-                            value={selectedPlayer.birthDate} 
-                            readOnly 
-                            className="form-control readonly-input"
-                          />
-                        </div>
-                      </div>
+                    </div>
+
+                    <div className="info-field">
+                      <label>FECHA DE NACIMIENTO</label>
+                      <input 
+                        type="date" 
+                        name="fecha_nacimiento"
+                        value={selectedPlayer.fecha_nacimiento} 
+                        onChange={handleEditInputChange}
+                        readOnly={!isEditing}
+                        className={`form-control ${!isEditing ? 'readonly-input' : ''}`}
+                      />
                     </div>
 
                     <div className="row">
@@ -554,9 +683,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
                           <label>PAÍS</label>
                           <input 
                             type="text" 
-                            value={selectedPlayer.country} 
-                            readOnly 
-                            className="form-control readonly-input"
+                            name="pais"
+                            value={selectedPlayer.pais} 
+                            onChange={handleEditInputChange}
+                            readOnly={!isEditing}
+                            className={`form-control ${!isEditing ? 'readonly-input' : ''}`}
                           />
                         </div>
                       </div>
@@ -565,9 +696,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
                           <label>DEPARTAMENTO</label>
                           <input 
                             type="text" 
-                            value={selectedPlayer.department} 
-                            readOnly 
-                            className="form-control readonly-input"
+                            name="departamento"
+                            value={selectedPlayer.departamento} 
+                            onChange={handleEditInputChange}
+                            readOnly={!isEditing}
+                            className={`form-control ${!isEditing ? 'readonly-input' : ''}`}
                           />
                         </div>
                       </div>
@@ -576,9 +709,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
                           <label>CIUDAD</label>
                           <input 
                             type="text" 
-                            value={selectedPlayer.city} 
-                            readOnly 
-                            className="form-control readonly-input"
+                            name="ciudad"
+                            value={selectedPlayer.ciudad} 
+                            onChange={handleEditInputChange}
+                            readOnly={!isEditing}
+                            className={`form-control ${!isEditing ? 'readonly-input' : ''}`}
                           />
                         </div>
                       </div>
@@ -588,7 +723,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
                       <label>CATEGORÍA</label>
                       <input 
                         type="text" 
-                        value={selectedPlayer.category} 
+                        value={selectedPlayer.categoria?.nombre || 'Sin categoría'} 
                         readOnly 
                         className="form-control readonly-input"
                       />
@@ -598,7 +733,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
                       <label>CLUB O ESCUELA</label>
                       <input 
                         type="text" 
-                        value={selectedPlayer.club} 
+                        value={selectedPlayer.escuela?.nombre || 'Sin escuela'} 
                         readOnly 
                         className="form-control readonly-input"
                       />
@@ -610,21 +745,36 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
                           <label>EPS</label>
                           <input 
                             type="text" 
+                            name="eps"
                             value={selectedPlayer.eps} 
-                            readOnly 
-                            className="form-control readonly-input"
+                            onChange={handleEditInputChange}
+                            readOnly={!isEditing}
+                            className={`form-control ${!isEditing ? 'readonly-input' : ''}`}
                           />
                         </div>
                       </div>
                       <div className="col-md-6">
                         <div className="info-field">
                           <label>TIPO DE EPS</label>
-                          <input 
-                            type="text" 
-                            value={selectedPlayer.epsType} 
-                            readOnly 
-                            className="form-control readonly-input"
-                          />
+                          {isEditing ? (
+                            <select 
+                              name="tipo_eps"
+                              value={selectedPlayer.tipo_eps} 
+                              onChange={handleEditInputChange}
+                              className="form-control"
+                            >
+                              <option value="Subsidiado">Subsidiado</option>
+                              <option value="Contributivo">Contributivo</option>
+                              <option value="Especial">Especial</option>
+                            </select>
+                          ) : (
+                            <input 
+                              type="text" 
+                              value={selectedPlayer.tipo_eps} 
+                              readOnly 
+                              className="form-control readonly-input"
+                            />
+                          )}
                         </div>
                       </div>
                     </div>
@@ -653,171 +803,248 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
         <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
           <div className="add-player-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 className="modal-title">AGREGAR JUGADOR</h3>
+              <h3 className="modal-title">AGREGAR NUEVO JUGADOR</h3>
               <button className="close-button" onClick={() => setShowAddModal(false)}>
                 ✕
               </button>
             </div>
 
             <div className="modal-body">
+              {error && (
+                <div className="alert alert-danger mb-3">
+                  {error}
+                </div>
+              )}
+              
               <form onSubmit={handleAddPlayer}>
-                <div className="mb-2">
-                  <label htmlFor="document" className="form-label">Documento</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    id="document"
-                    name="document"
-                    value={newPlayer.document}
-                    onChange={handleInputChange}
-                    placeholder="123"
-                    required
-                  />
+                <div className="row">
+                  <div className="col-md-6">
+                    <div className="mb-3">
+                      <label htmlFor="documento" className="form-label">
+                        Documento <span className="text-danger">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        id="documento"
+                        name="documento"
+                        value={newPlayer.documento}
+                        onChange={handleInputChange}
+                        placeholder="123456789"
+                        required
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="col-md-6">
+                    <div className="mb-3">
+                      <label htmlFor="fecha_nacimiento" className="form-label">
+                        Fecha de Nacimiento <span className="text-danger">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        className="form-control"
+                        id="fecha_nacimiento"
+                        name="fecha_nacimiento"
+                        value={newPlayer.fecha_nacimiento}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div className="mb-2">
-                  <label htmlFor="firstName" className="form-label">Nombre</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    id="firstName"
-                    name="firstName"
-                    value={newPlayer.firstName}
-                    onChange={handleInputChange}
-                    placeholder="..."
-                    required
-                  />
+
+                <div className="row">
+                  <div className="col-md-6">
+                    <div className="mb-3">
+                      <label htmlFor="nombre" className="form-label">
+                        Nombre <span className="text-danger">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        id="nombre"
+                        name="nombre"
+                        value={newPlayer.nombre}
+                        onChange={handleInputChange}
+                        placeholder="Nombre del jugador"
+                        required
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="col-md-6">
+                    <div className="mb-3">
+                      <label htmlFor="apellido" className="form-label">
+                        Apellido <span className="text-danger">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        id="apellido"
+                        name="apellido"
+                        value={newPlayer.apellido}
+                        onChange={handleInputChange}
+                        placeholder="Apellido del jugador"
+                        required
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div className="mb-2">
-                  <label htmlFor="lastName" className="form-label">Apellido</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    id="lastName"
-                    name="lastName"
-                    value={newPlayer.lastName}
-                    onChange={handleInputChange}
-                    placeholder="..."
-                    required
-                  />
+
+                <div className="row">
+                  <div className="col-md-4">
+                    <div className="mb-3">
+                      <label htmlFor="pais" className="form-label">País</label>
+                      <select
+                        className="form-control"
+                        id="pais"
+                        name="pais"
+                        value={newPlayer.pais}
+                        onChange={handleInputChange}
+                        required
+                      >
+                        <option value="Colombia">Colombia</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <div className="col-md-4">
+                    <div className="mb-3">
+                      <label htmlFor="departamento" className="form-label">Departamento</label>
+                      <select
+                        className="form-control"
+                        id="departamento"
+                        name="departamento"
+                        value={newPlayer.departamento}
+                        onChange={handleInputChange}
+                        required
+                      >
+                        <option value="Norte de Santander">Norte de Santander</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <div className="col-md-4">
+                    <div className="mb-3">
+                      <label htmlFor="ciudad" className="form-label">Ciudad</label>
+                      <select
+                        className="form-control"
+                        id="ciudad"
+                        name="ciudad"
+                        value={newPlayer.ciudad}
+                        onChange={handleInputChange}
+                        required
+                      >
+                        <option value="Ocaña">Ocaña</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
-                <div className="mb-2">
-                  <label htmlFor="birthDate" className="form-label">Nacimiento</label>
-                  <input
-                    type="date"
-                    className="form-control"
-                    id="birthDate"
-                    name="birthDate"
-                    value={newPlayer.birthDate}
-                    onChange={handleInputChange}
-                    required
-                  />
+
+                <div className="row">
+                  <div className="col-md-6">
+                    <div className="mb-3">
+                      <label htmlFor="categoria_id" className="form-label">
+                        Categoría <span className="text-danger">*</span>
+                      </label>
+                      <select
+                        className="form-control"
+                        id="categoria_id"
+                        name="categoria_id"
+                        value={newPlayer.categoria_id}
+                        onChange={handleInputChange}
+                        required
+                      >
+                        <option value="">Seleccione una categoría</option>
+                        {categorias.map(cat => (
+                          <option key={cat.id} value={cat.id}>{cat.nombre}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <div className="col-md-6">
+                    <div className="mb-3">
+                      <label htmlFor="escuela_id" className="form-label">
+                        Club o Escuela <span className="text-danger">*</span>
+                      </label>
+                      <select
+                        className="form-control"
+                        id="escuela_id"
+                        name="escuela_id"
+                        value={newPlayer.escuela_id}
+                        onChange={handleInputChange}
+                        disabled={currentUser.rol === 'entrenador'}
+                        required
+                      >
+                        <option value="">Seleccione una escuela</option>
+                        {escuelas.map(escuela => (
+                          <option key={escuela.id} value={escuela.id}>{escuela.nombre}</option>
+                        ))}
+                      </select>
+                      {currentUser.rol === 'entrenador' && (
+                        <small className="text-muted">
+                          Solo puedes agregar jugadores a tu escuela asignada
+                        </small>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <div className="mb-2">
-                  <label htmlFor="country" className="form-label">País</label>
-                  <select
-                    className="form-control"
-                    id="country"
-                    name="country"
-                    value={newPlayer.country}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="">Seleccione</option>
-                    <option value="Colombia">Colombia</option>
-                  </select>
+
+                <div className="row">
+                  <div className="col-md-6">
+                    <div className="mb-3">
+                      <label htmlFor="eps" className="form-label">
+                        EPS <span className="text-danger">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        id="eps"
+                        name="eps"
+                        value={newPlayer.eps}
+                        onChange={handleInputChange}
+                        placeholder="Nueva EPS"
+                        required
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="col-md-6">
+                    <div className="mb-3">
+                      <label htmlFor="tipo_eps" className="form-label">
+                        Tipo de EPS <span className="text-danger">*</span>
+                      </label>
+                      <select
+                        className="form-control"
+                        id="tipo_eps"
+                        name="tipo_eps"
+                        value={newPlayer.tipo_eps}
+                        onChange={handleInputChange}
+                        required
+                      >
+                        <option value="Subsidiado">Subsidiado</option>
+                        <option value="Contributivo">Contributivo</option>
+                        <option value="Especial">Especial</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
-                <div className="mb-2">
-                  <label htmlFor="department" className="form-label">Departamento</label>
-                  <select
-                    className="form-control"
-                    id="department"
-                    name="department"
-                    value={newPlayer.department}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="">Seleccione</option>
-                    <option value="Norte de Santander">Norte de Santander</option>
-                  </select>
-                </div>
-                <div className="mb-2">
-                  <label htmlFor="city" className="form-label">Ciudad</label>
-                  <select
-                    className="form-control"
-                    id="city"
-                    name="city"
-                    value={newPlayer.city}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="">Seleccione</option>
-                    <option value="Ocaña">Ocaña</option>
-                  </select>
-                </div>
-                <div className="mb-2">
-                  <label htmlFor="category" className="form-label">Categoría</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    id="category"
-                    name="category"
-                    value={newPlayer.category}
-                    onChange={handleInputChange}
-                    placeholder="Seleccione"
-                    required
-                  />
-                </div>
-                <div className="mb-2">
-                  <label htmlFor="club" className="form-label">Club o Escuela</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    id="club"
-                    name="club"
-                    value={newPlayer.club}
-                    onChange={handleInputChange}
-                    placeholder="Seleccione"
-                    required
-                  />
-                </div>
-                <div className="mb-2">
-                  <label htmlFor="eps" className="form-label">EPS</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    id="eps"
-                    name="eps"
-                    value={newPlayer.eps}
-                    onChange={handleInputChange}
-                    placeholder="..."
-                    required
-                  />
-                </div>
-                <div className="mb-2">
-                  <label htmlFor="epsType" className="form-label">Tipo de EPS</label>
-                  <select
-                    className="form-control"
-                    id="epsType"
-                    name="epsType"
-                    value={newPlayer.epsType}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="">Seleccione</option>
-                    <option value="Subsidiado">Subsidiado</option>
-                    <option value="Contributivo">Contributivo</option>
-                  </select>
-                </div>
+
                 <div className="modal-actions">
                   <button type="submit" className="btn btn-success action-btn">
-                    Crear Usuario
+                    ✅ Crear Jugador
                   </button>
                   <button
                     type="button"
                     className="btn btn-secondary action-btn"
-                    onClick={() => setShowAddModal(false)}
+                    onClick={() => {
+                      setShowAddModal(false);
+                      setError(null);
+                    }}
                   >
-                    Cancelar
+                    ❌ Cancelar
                   </button>
                 </div>
               </form>
@@ -825,624 +1052,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
           </div>
         </div>
       )}
-
-      <style>{`
-        .dashboard-container {
-    height: 100vh;
-    background: #f8f9fa;
-    display: flex;
-    flex-direction: column;
-    transition: all 0.3s ease;
-  }
-
-  /* MODO OSCURO */
-  .dashboard-container.dark-theme {
-    background: #1a1a1a;
-    color: #e0e0e0;
-  }
-
-  .dashboard-header {
-    background: white;
-    border-bottom: 1px solid #e9ecef;
-    padding: 1rem 0;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    transition: all 0.3s ease;
-  }
-
-  .dark-theme .dashboard-header {
-    background: #2d2d2d;
-    border-bottom: 1px solid #404040;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-  }
-
-  .logo-section {
-    gap: 0.75rem;
-  }
-
-  .header-logo {
-    width: 40px;
-    height: 40px;
-    object-fit: contain;
-  }
-
-  .company-title {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: #2c3e50;
-    line-height: 1.2;
-    transition: color 0.3s ease;
-  }
-
-  .dark-theme .company-title {
-    color: #e0e0e0;
-  }
-
-  .user-section {
-    gap: 0.5rem;
-  }
-
-  .theme-toggle {
-    background: #f8f9fa;
-    border: 1px solid #dee2e6;
-    color: #6c757d;
-    border-radius: 6px;
-    padding: 0.375rem 0.75rem;
-    transition: all 0.3s ease;
-  }
-
-  .dark-theme .theme-toggle {
-    background: #404040;
-    border: 1px solid #555;
-    color: #e0e0e0;
-  }
-
-  .theme-toggle:hover {
-    transform: scale(1.1);
-  }
-
-  .user-name {
-    font-weight: 500;
-    color: #2c3e50;
-    transition: color 0.3s ease;
-  }
-
-  .dark-theme .user-name {
-    color: #e0e0e0;
-  }
-
-  .dashboard-body {
-    flex: 1;
-    overflow: hidden;
-  }
-
-  .sidebar {
-    background: white;
-    height: 100%;
-    border-right: 1px solid #e9ecef;
-    padding: 1.5rem;
-    overflow-y: auto;
-    transition: all 0.3s ease;
-  }
-
-  .dark-theme .sidebar {
-    background: #2d2d2d;
-    border-right: 1px solid #404040;
-  }
-
-  .search-input-container {
-    position: relative;
-  }
-
-  .search-input {
-    padding-left: 0.75rem;
-    padding-right: 2.5rem;
-    border: 1px solid #ced4da;
-    border-radius: 6px;
-    font-size: 0.9rem;
-    transition: all 0.3s ease;
-  }
-
-  .dark-theme .search-input {
-    background: #404040;
-    border: 1px solid #555;
-    color: #e0e0e0;
-  }
-
-  .dark-theme .search-input::placeholder {
-    color: #999;
-  }
-
-  .search-clear {
-    position: absolute;
-    right: 0.5rem;
-    top: 50%;
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    color: #6c757d;
-    padding: 0.25rem;
-    transition: color 0.3s ease;
-  }
-
-  .dark-theme .search-clear {
-    color: #ccc;
-  }
-
-  .players-list {
-    margin-top: 1rem;
-  }
-
-  .player-item {
-    display: flex;
-    align-items: center;
-    padding: 0.75rem;
-    margin-bottom: 0.5rem;
-    background: #f8f9fa;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    gap: 0.75rem;
-  }
-
-  .dark-theme .player-item {
-    background: #404040;
-  }
-
-  .player-item:hover {
-    background: #e9ecef;
-    transform: translateX(4px);
-  }
-
-  .dark-theme .player-item:hover {
-    background: #4a4a4a;
-  }
-
-  .player-avatar img {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid #dee2e6;
-    transition: border-color 0.3s ease;
-  }
-
-  .dark-theme .player-avatar img {
-    border: 2px solid #555;
-  }
-
-  .player-info {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .player-document {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: #495057;
-    margin-bottom: 0.25rem;
-    transition: color 0.3s ease;
-  }
-
-  .dark-theme .player-document {
-    color: #e0e0e0;
-  }
-
-  .player-name {
-    font-size: 0.8rem;
-    color: #6c757d;
-    line-height: 1.3;
-    word-wrap: break-word;
-    transition: color 0.3s ease;
-  }
-
-  .dark-theme .player-name {
-    color: #bbb;
-  }
-
-  .main-content {
-    padding: 2rem;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .search-document-section {
-    background: white;
-    padding: 2.5rem;
-    border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    text-align: center;
-    min-width: 400px;
-    transition: all 0.3s ease;
-  }
-
-  .dark-theme .search-document-section {
-    background: #2d2d2d;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-  }
-
-  .section-title {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #2c3e50;
-    margin-bottom: 2rem;
-    letter-spacing: 0.5px;
-    transition: color 0.3s ease;
-  }
-
-  .dark-theme .section-title {
-    color: #e0e0e0;
-  }
-
-  .form-label {
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: #495057;
-    margin-bottom: 0.75rem;
-    display: block;
-    text-align: left;
-    transition: color 0.3s ease;
-  }
-
-  .dark-theme .form-label {
-    color: #ccc;
-  }
-
-  .document-input-container {
-    position: relative;
-  }
-
-  .input-icon {
-    position: absolute;
-    left: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #6c757d;
-    font-size: 1rem;
-    z-index: 2;
-    transition: color 0.3s ease;
-  }
-
-  .dark-theme .input-icon {
-    color: #999;
-  }
-
-  .document-input {
-    padding: 1rem 1rem 1rem 2.75rem;
-    font-size: 1.1rem;
-    border: 2px solid #e9ecef;
-    border-radius: 8px;
-    background: #f8f9fa;
-    transition: all 0.3s ease;
-    width: 100%;
-  }
-
-  .dark-theme .document-input {
-    background: #404040;
-    border: 2px solid #555;
-    color: #e0e0e0;
-  }
-
-  .dark-theme .document-input::placeholder {
-    color: #999;
-  }
-
-  .document-input:focus {
-    border-color: #4caf50;
-    box-shadow: 0 0 0 0.2rem rgba(76, 175, 80, 0.25);
-    background: white;
-  }
-
-  .dark-theme .document-input:focus {
-    background: #4a4a4a;
-    border-color: #4caf50;
-  }
-
-  @media (max-width: 992px) {
-    .sidebar {
-      border-right: none;
-      border-bottom: 1px solid #e9ecef;
-      height: auto;
-      max-height: 300px;
-    }
-    
-    .dark-theme .sidebar {
-      border-bottom: 1px solid #404040;
-    }
-    
-    .search-document-section {
-      min-width: auto;
-      margin: 1rem;
-    }
-  }
-
-  @media (max-width: 576px) {
-    .company-title {
-      font-size: 0.75rem;
-    }
-    
-    .main-content {
-      padding: 1rem;
-    }
-    
-    .search-document-section {
-      padding: 1.5rem;
-    }
-  }
-
-  /* MODAL STYLES */
-  .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    padding: 1rem;
-  }
-
-  .player-modal, .add-player-modal {
-    background: white;
-    border-radius: 12px;
-    max-width: 900px;
-    width: 100%;
-    max-height: 90vh;
-    overflow-y: auto;
-    position: relative;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-    transition: all 0.3s ease;
-  }
-
-  .dark-theme .player-modal, .dark-theme .add-player-modal {
-    background: #2d2d2d;
-    color: #e0e0e0;
-  }
-
-  .modal-header {
-    background: #f8f9fa;
-    padding: 1.5rem 2rem;
-    border-bottom: 1px solid #e9ecef;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-radius: 12px 12px 0 0;
-  }
-
-  .dark-theme .modal-header {
-    background: #404040;
-    border-bottom: 1px solid #555;
-  }
-
-  .modal-title {
-    margin: 0;
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #2c3e50;
-  }
-
-  .dark-theme .modal-title {
-    color: #e0e0e0;
-  }
-
-  .close-button {
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    color: #6c757d;
-    cursor: pointer;
-    padding: 0.25rem;
-    transition: color 0.3s ease;
-  }
-
-  .close-button:hover {
-    color: #dc3545;
-  }
-
-  .dark-theme .close-button {
-    color: #ccc;
-  }
-
-  .modal-body {
-    padding: 2rem;
-  }
-
-  .photo-section h5 {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: #495057;
-    margin-bottom: 1rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  .dark-theme .photo-section h5 {
-    color: #ccc;
-  }
-
-  .photo-container {
-    position: relative;
-    display: inline-block;
-  }
-
-  .player-photo {
-    width: 150px;
-    height: 150px;
-    border-radius: 8px;
-    object-fit: cover;
-    border: 3px solid #e9ecef;
-  }
-
-  .dark-theme .player-photo {
-    border: 3px solid #555;
-  }
-
-  .photo-search-btn {
-    position: absolute;
-    bottom: 8px;
-    right: 8px;
-    background: rgba(255, 255, 255, 0.9);
-    border: none;
-    border-radius: 50%;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 1rem;
-    transition: all 0.3s ease;
-  }
-
-  .photo-search-btn:hover {
-    background: white;
-    transform: scale(1.1);
-  }
-
-  .info-section {
-    padding-left: 1rem;
-  }
-
-  .info-field {
-    margin-bottom: 1.5rem;
-  }
-
-  .info-field label {
-    display: block;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: #495057;
-    margin-bottom: 0.5rem;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-  }
-
-  .dark-theme .info-field label {
-    color: #ccc;
-  }
-
-  .readonly-input {
-    background: #f8f9fa !important;
-    border: 1px solid #dee2e6;
-    color: #495057;
-    font-size: 0.9rem;
-    padding: 0.6rem 0.75rem;
-    border-radius: 6px;
-  }
-
-  .dark-theme .readonly-input {
-    background: #404040 !important;
-    border: 1px solid #555;
-    color: #e0e0e0;
-  }
-
-  .input-group {
-    position: relative;
-  }
-
-  .input-group-btn {
-    position: absolute;
-    right: 8px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    color: #6c757d;
-    font-size: 1rem;
-    cursor: pointer;
-    padding: 0.25rem;
-  }
-
-  .dark-theme .input-group-btn {
-    color: #ccc;
-  }
-
-  .modal-actions {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-    margin-top: 2rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid #e9ecef;
-  }
-
-  .dark-theme .modal-actions {
-    border-top: 1px solid #555;
-  }
-
-  .action-btn {
-    padding: 0.75rem 1.5rem;
-    font-size: 0.9rem;
-    font-weight: 600;
-    border-radius: 8px;
-    border: none;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-  }
-
-  .action-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  }
-
-  @media (max-width: 768px) {
-    .player-modal, .add-player-modal {
-      margin: 0.5rem;
-      max-height: 95vh;
-    }
-    
-    .modal-body {
-      padding: 1rem;
-    }
-    
-    .info-section {
-      padding-left: 0;
-      margin-top: 1.5rem;
-    }
-    
-    .modal-actions {
-      flex-direction: column;
-      align-items: center;
-    }
-    
-    .action-btn {
-      width: 100%;
-      max-width: 300px;
-    }
-  }
-
-  /* ESTILOS ADICIONALES PARA BUSCAR POR DOCUMENTO */
-  .search-result {
-    border-radius: 8px;
-    margin-top: 1rem;
-  }
-
-  .search-result p {
-    margin: 0;
-    font-size: 0.9rem;
-  }
-
-  .dark-theme .search-result {
-    background: #404040;
-    color: #e0e0e0;
-  }
-
-  .dark-theme .alert-success {
-    background: #2d4a2d;
-    border-color: #45a049;
-  }
-
-  .dark-theme .alert-warning {
-    background: #4a2d2d;
-    border-color: #dc3545;
-  }
-      `}</style>
     </div>
   );
 };
