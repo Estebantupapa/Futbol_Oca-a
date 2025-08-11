@@ -139,18 +139,43 @@ export const getEscuelas = async () => {
 
 // Función para crear un nuevo jugador
 export const createJugador = async (jugador: JugadorInsert) => {
-  const { data, error } = await supabase
-    .from('jugadores')
-    .insert(jugador)
-    .select(`
-      *,
-      categoria:categorias(*),
-      escuela:escuelas(*)
-    `)
-    .single()
+  console.log('=== DEBUG CREATE JUGADOR ===');
+  console.log('Received jugador data:', jugador);
   
-  return { data: data as Jugador | null, error }
-}
+  try {
+    console.log('Attempting to insert into jugadores table...');
+    
+    const { data, error } = await supabase
+      .from('jugadores')
+      .insert(jugador)
+      .select(`
+        *,
+        categoria:categorias(*),
+        escuela:escuelas(*)
+      `)
+      .single();
+    
+    console.log('Supabase response data:', data);
+    console.log('Supabase response error:', error);
+    
+    if (error) {
+      console.error('Supabase error details:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint
+      });
+    }
+    
+    console.log('=== END DEBUG CREATE JUGADOR ===');
+    return { data: data as Jugador | null, error };
+    
+  } catch (catchError) {
+    console.error('Catch error in createJugador:', catchError);
+    console.log('=== END DEBUG CREATE JUGADOR ===');
+    return { data: null, error: catchError };
+  }
+};
 
 // Función para actualizar un jugador
 export const updateJugador = async (id: string, updates: JugadorUpdate) => {

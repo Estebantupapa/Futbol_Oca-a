@@ -188,67 +188,112 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
     }
   };
 
-  const handleAddPlayer = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    try {
-      // Validar campos requeridos
-      if (!newPlayer.documento || !newPlayer.nombre || !newPlayer.apellido || 
-          !newPlayer.fecha_nacimiento || !newPlayer.categoria_id || 
-          !newPlayer.escuela_id || !newPlayer.eps) {
-        setError('Todos los campos son obligatorios');
-        return;
-      }
+  // Reemplaza tu función handleAddPlayer con esta versión con debug:
 
-      const playerData: JugadorInsert = {
-        documento: newPlayer.documento,
-        nombre: newPlayer.nombre,
-        apellido: newPlayer.apellido,
-        fecha_nacimiento: newPlayer.fecha_nacimiento,
-        pais: newPlayer.pais || 'Colombia',
-        departamento: newPlayer.departamento || 'Norte de Santander',
-        ciudad: newPlayer.ciudad || 'Ocaña',
-        categoria_id: newPlayer.categoria_id,
-        escuela_id: newPlayer.escuela_id,
-        eps: newPlayer.eps,
-        tipo_eps: newPlayer.tipo_eps || 'Subsidiado'
-      };
+// Reemplaza tu función handleAddPlayer con esta versión con debug:
 
-      const result = await createJugador(playerData);
-      
-      if (result.error) {
-        if (result.error.code === '23505') {
-          setError('Ya existe un jugador con este documento');
-        } else {
-          throw result.error;
-        }
-        return;
-      }
-      
-      // Recargar jugadores
-      await loadPlayers();
-      
-      setShowAddModal(false);
-      setNewPlayer({
-        documento: '',
-        nombre: '',
-        apellido: '',
-        fecha_nacimiento: '',
-        pais: 'Colombia',
-        departamento: 'Norte de Santander',
-        ciudad: 'Ocaña',
-        categoria_id: '',
-        escuela_id: currentUser.rol === 'entrenador' ? currentUser.escuela_id || '' : '',
-        eps: '',
-        tipo_eps: 'Subsidiado'
+const handleAddPlayer = async (e: React.FormEvent) => {
+  e.preventDefault();
+  
+  console.log('=== DEBUG ADD PLAYER ===');
+  console.log('Form data:', newPlayer);
+  console.log('Current user:', currentUser);
+  
+  try {
+    // Validar campos requeridos
+    if (!newPlayer.documento || !newPlayer.nombre || !newPlayer.apellido || 
+        !newPlayer.fecha_nacimiento || !newPlayer.categoria_id || 
+        !newPlayer.escuela_id || !newPlayer.eps) {
+      console.log('Validation failed. Missing fields:', {
+        documento: !!newPlayer.documento,
+        nombre: !!newPlayer.nombre,
+        apellido: !!newPlayer.apellido,
+        fecha_nacimiento: !!newPlayer.fecha_nacimiento,
+        categoria_id: !!newPlayer.categoria_id,
+        escuela_id: !!newPlayer.escuela_id,
+        eps: !!newPlayer.eps
       });
-      setError(null);
-      
-    } catch (err: any) {
-      console.error('Error adding player:', err);
-      setError(err.message || 'Error agregando jugador');
+      setError('Todos los campos son obligatorios');
+      return;
     }
-  };
+
+    console.log('Validation passed, creating player data...');
+
+    const playerData: JugadorInsert = {
+      documento: newPlayer.documento,
+      nombre: newPlayer.nombre,
+      apellido: newPlayer.apellido,
+      fecha_nacimiento: newPlayer.fecha_nacimiento,
+      pais: newPlayer.pais || 'Colombia',
+      departamento: newPlayer.departamento || 'Norte de Santander',
+      ciudad: newPlayer.ciudad || 'Ocaña',
+      categoria_id: newPlayer.categoria_id,
+      escuela_id: newPlayer.escuela_id,
+      eps: newPlayer.eps,
+      tipo_eps: newPlayer.tipo_eps || 'Subsidiado'
+    };
+
+    console.log('Player data to insert:', playerData);
+    console.log('Calling createJugador...');
+
+    const result = await createJugador(playerData);
+    
+    console.log('createJugador result:', result);
+    
+    if (result.error) {
+      console.error('Error from createJugador:', result.error);
+      
+      // Convertir error a any para acceder a propiedades
+      const error = result.error as any;
+      
+      if (error.code === '23505') {
+        setError('Ya existe un jugador con este documento');
+      } else if (error.message) {
+        setError(`Error: ${error.message}`);
+      } else {
+        setError('Error agregando jugador');
+      }
+      return;
+    }
+
+    console.log('Player created successfully, reloading players...');
+    
+    // Recargar jugadores
+    await loadPlayers();
+    
+    console.log('Players reloaded, closing modal...');
+    
+    setShowAddModal(false);
+    setNewPlayer({
+      documento: '',
+      nombre: '',
+      apellido: '',
+      fecha_nacimiento: '',
+      pais: 'Colombia',
+      departamento: 'Norte de Santander',
+      ciudad: 'Ocaña',
+      categoria_id: '',
+      escuela_id: currentUser.rol === 'entrenador' ? currentUser.escuela_id || '' : '',
+      eps: '',
+      tipo_eps: 'Subsidiado'
+    });
+    setError(null);
+
+    console.log('Add player process completed successfully');
+    
+  } catch (err: any) {
+    console.error('Error in handleAddPlayer catch block:', err);
+    console.error('Error details:', {
+      message: err.message,
+      code: err.code,
+      details: err.details,
+      hint: err.hint
+    });
+    setError(err.message || 'Error agregando jugador');
+  } finally {
+    console.log('=== END DEBUG ADD PLAYER ===');
+  }
+};
 
   const handleUpdatePlayer = async () => {
     if (!selectedPlayer) return;
