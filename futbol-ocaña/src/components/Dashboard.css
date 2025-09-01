@@ -613,3 +613,499 @@
     background: #4a2d2d;
     border-color: #dc3545;
   }
+
+
+  /* Agregar estos estilos a tu Dashboard.css */
+
+.section-title {
+  color: #495057;
+  font-weight: 600;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 15px;
+  border-bottom: 2px solid #e9ecef;
+  padding-bottom: 8px;
+}
+
+.player-photo {
+  width: 150px;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid #dee2e6;
+  display: block;
+}
+
+.photo-container {
+  position: relative;
+  text-align: center;
+}
+
+.documents-section {
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.documents-section h6 {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #6c757d;
+  margin-bottom: 10px;
+}
+
+.document-links {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.document-links .btn {
+  font-size: 12px;
+  padding: 6px 12px;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.document-links .btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Mejorar el modal para que sea más ancho */
+.add-player-modal {
+  max-width: 900px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Estilo para separadores de secciones */
+.add-player-modal hr {
+  border: none;
+  height: 1px;
+  background: linear-gradient(to right, transparent, #dee2e6, transparent);
+  margin: 20px 0;
+}
+
+/* Iconos en las secciones */
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .add-player-modal {
+    width: 95%;
+    max-height: 95vh;
+  }
+  
+  .documents-section {
+    margin-top: 20px;
+  }
+  
+  .player-photo {
+    width: 120px;
+    height: 120px;
+  }
+}
+
+/* Dark theme support */
+.dark-theme .section-title {
+  color: #e9ecef;
+  border-bottom-color: #495057;
+}
+
+.dark-theme .documents-section {
+  background-color: #2d3436;
+  border-color: #636e72;
+}
+
+.dark-theme .documents-section h6 {
+  color: #b2bec3;
+}
+
+.dark-theme .player-photo {
+  border-color: #636e72;
+}
+
+/* Animaciones suaves */
+.document-links .btn {
+  transition: all 0.2s ease;
+}
+
+/* Indicadores de carga */
+.file-uploading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.upload-progress {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, 0.9);
+  padding: 10px;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* Estilos para validación de archivos */
+.file-validation-error {
+  background-color: #f8d7da;
+  border-color: #f5c6cb;
+  color: #721c24;
+}
+
+.file-validation-success {
+  background-color: #d4edda;
+  border-color: #c3e6cb;
+  color: #155724;
+}
+
+
+
+/* Agregar estos estilos a tu Dashboard.css existente */
+
+/* ==========================================
+   ESTILOS PARA AVATARES CON FOTOS
+========================================== */
+
+.player-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  margin-right: 12px;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+}
+
+.avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(45deg, #e3f2fd, #bbdefb);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: #1976d2;
+  border-radius: 50%;
+}
+
+/* ==========================================
+   ESTILOS PARA FOTOS EN MODALES
+========================================== */
+
+.player-photo {
+  width: 150px;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 3px solid #dee2e6;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.player-photo-placeholder {
+  width: 150px;
+  height: 150px;
+  background: linear-gradient(45deg, #f8f9fa, #e9ecef);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 4rem;
+  color: #6c757d;
+  border-radius: 12px;
+  border: 3px solid #dee2e6;
+}
+
+/* ==========================================
+   ESTILOS PARA SECCIÓN DE DOCUMENTOS
+========================================== */
+
+.documents-section {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+}
+
+.documents-section h5 {
+  margin-bottom: 15px;
+  color: #495057;
+  font-weight: 600;
+}
+
+.document-links {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.document-item .btn {
+  font-size: 13px;
+  padding: 8px 12px;
+  text-align: left;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.document-item .btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* ==========================================
+   ESTILOS PARA SECCIÓN DE ARCHIVOS EN MODAL
+========================================== */
+
+.files-section {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  border: 2px dashed #dee2e6;
+  margin-bottom: 20px;
+}
+
+.files-section h5 {
+  color: #495057;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+/* ==========================================
+   MEJORAS PARA EL MODAL DE AGREGAR JUGADOR
+========================================== */
+
+.add-player-modal {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+  max-height: 90vh;
+  overflow-y: auto;
+  margin: 20px;
+}
+
+.add-player-modal .modal-body {
+  padding: 20px;
+  max-height: calc(90vh - 120px);
+  overflow-y: auto;
+}
+
+.add-player-modal .modal-header {
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  color: white;
+  padding: 15px 20px;
+  border-radius: 12px 12px 0 0;
+  border-bottom: none;
+}
+
+.add-player-modal .modal-title {
+  font-weight: 600;
+  font-size: 1.2rem;
+}
+
+.add-player-modal hr {
+  margin: 30px 0 20px 0;
+  border-color: #dee2e6;
+}
+
+.add-player-modal .form-label {
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 5px;
+}
+
+.add-player-modal .form-control {
+  border: 2px solid #e9ecef;
+  border-radius: 6px;
+  padding: 10px 12px;
+  transition: all 0.2s ease;
+}
+
+.add-player-modal .form-control:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+}
+
+/* ==========================================
+   ESTILOS PARA INDICADORES DE CARGA
+========================================== */
+
+.modal-title .spinner-border-sm {
+  width: 1rem;
+  height: 1rem;
+}
+
+.action-btn .spinner-border-sm {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+/* ==========================================
+   ESTILOS PARA MODO OSCURO (ARCHIVOS)
+========================================== */
+
+.dark-theme .files-section {
+  background: #2d3436;
+  border-color: #636e72;
+  color: #ddd;
+}
+
+.dark-theme .documents-section {
+  background: #2d3436;
+  border-color: #636e72;
+}
+
+.dark-theme .documents-section h5 {
+  color: #ddd;
+}
+
+.dark-theme .add-player-modal {
+  background: #2d3436;
+  color: #ddd;
+}
+
+.dark-theme .add-player-modal .form-control {
+  background: #363a3c;
+  border-color: #636e72;
+  color: #ddd;
+}
+
+.dark-theme .add-player-modal .form-control:focus {
+  background: #363a3c;
+  border-color: #74b9ff;
+  color: #ddd;
+}
+
+.dark-theme .add-player-modal .form-label {
+  color: #b2bec3;
+}
+
+.dark-theme .player-photo-placeholder {
+  background: linear-gradient(45deg, #2d3436, #636e72);
+  color: #b2bec3;
+  border-color: #636e72;
+}
+
+.dark-theme .avatar-placeholder {
+  background: linear-gradient(45deg, #2d3436, #636e72);
+  color: #74b9ff;
+}
+
+/* ==========================================
+   MEJORAS RESPONSIVE
+========================================== */
+
+@media (max-width: 768px) {
+  .add-player-modal {
+    margin: 10px;
+    width: calc(100% - 20px);
+  }
+  
+  .files-section .row {
+    gap: 15px;
+  }
+  
+  .player-photo,
+  .player-photo-placeholder {
+    width: 120px;
+    height: 120px;
+  }
+  
+  .documents-section {
+    padding: 12px;
+  }
+  
+  .document-item .btn {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+}
+
+@media (max-width: 576px) {
+  .add-player-modal .modal-body {
+    padding: 15px;
+  }
+  
+  .files-section {
+    padding: 15px;
+  }
+  
+  .player-avatar {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .avatar-placeholder {
+    font-size: 20px;
+  }
+}
+
+/* ==========================================
+   ANIMACIONES SUAVES
+========================================== */
+
+.player-photo,
+.avatar-image {
+  transition: all 0.3s ease;
+}
+
+.player-photo:hover,
+.avatar-image:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+}
+
+.document-item {
+  transition: all 0.2s ease;
+}
+
+.files-section {
+  transition: all 0.3s ease;
+}
+
+/* ==========================================
+   ESTADOS DE LOADING ESPECÍFICOS
+========================================== */
+
+.uploading-indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0,0,0,0.8);
+  color: white;
+  padding: 10px 15px;
+  border-radius: 20px;
+  font-size: 12px;
+  z-index: 1000;
+}
+
+.form-control:disabled {
+  background-color: #f8f9fa;
+  opacity: 0.7;
+}
+
+.dark-theme .form-control:disabled {
+  background-color: #2d3436;
+  opacity: 0.7;
+}
+

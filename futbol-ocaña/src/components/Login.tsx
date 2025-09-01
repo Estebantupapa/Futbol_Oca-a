@@ -1,3 +1,4 @@
+//Login.tsx
 import React, { useState, useEffect } from 'react';
 import Dashboard from './Dashboard';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -232,7 +233,7 @@ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
                 <div className="text-center mb-4">
                   <div className="logo-container mb-3">
                     <img 
-                      src="/src/assets/logo-oceañero.png" 
+                      src="./src/img/logo_bueno.png" 
                       alt="Logo Corporación de Futbol Oceañero" 
                       className="logo-img"
                       onError={(e) => {

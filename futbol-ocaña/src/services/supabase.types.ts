@@ -1,3 +1,4 @@
+//supabase.types.ts
 export type Json =
   | string
   | number
@@ -57,6 +58,64 @@ export type Database = {
         }
         Relationships: []
       }
+      ciudades: {
+        Row: {
+          created_at: string | null
+          departamento_id: string | null
+          id: string
+          nombre: string
+        }
+        Insert: {
+          created_at?: string | null
+          departamento_id?: string | null
+          id?: string
+          nombre: string
+        }
+        Update: {
+          created_at?: string | null
+          departamento_id?: string | null
+          id?: string
+          nombre?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ciudades_departamento_id_fkey"
+            columns: ["departamento_id"]
+            isOneToOne: false
+            referencedRelation: "departamentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      departamentos: {
+        Row: {
+          created_at: string | null
+          id: string
+          nombre: string
+          pais_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          nombre: string
+          pais_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          nombre?: string
+          pais_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "departamentos_pais_id_fkey"
+            columns: ["pais_id"]
+            isOneToOne: false
+            referencedRelation: "paises"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       escuelas: {
         Row: {
           created_at: string | null
@@ -81,8 +140,10 @@ export type Database = {
           apellido: string
           categoria_id: string
           ciudad: string
+          ciudad_id: string | null
           created_at: string | null
           departamento: string
+          departamento_id: string | null
           documento: string
           eps: string
           escuela_id: string
@@ -90,16 +151,22 @@ export type Database = {
           id: string
           nombre: string
           pais: string
+          pais_id: string | null
           tipo_eps: string
           updated_at: string | null
+          foto_perfil_url: string | null
+          documento_pdf_url: string | null
+          registro_civil_url: string | null
         }
         Insert: {
           activo?: boolean | null
           apellido: string
           categoria_id: string
           ciudad: string
+          ciudad_id?: string | null
           created_at?: string | null
           departamento: string
+          departamento_id?: string | null
           documento: string
           eps: string
           escuela_id: string
@@ -107,16 +174,22 @@ export type Database = {
           id?: string
           nombre: string
           pais?: string
+          pais_id?: string | null
           tipo_eps: string
           updated_at?: string | null
+          foto_perfil_url?: string | null
+          documento_pdf_url?: string | null
+          registro_civil_url?: string | null
         }
         Update: {
           activo?: boolean | null
           apellido?: string
           categoria_id?: string
           ciudad?: string
+          ciudad_id?: string | null
           created_at?: string | null
           departamento?: string
+          departamento_id?: string | null
           documento?: string
           eps?: string
           escuela_id?: string
@@ -124,8 +197,12 @@ export type Database = {
           id?: string
           nombre?: string
           pais?: string
+          pais_id?: string | null
           tipo_eps?: string
           updated_at?: string | null
+          foto_perfil_url?: string | null
+          documento_pdf_url?: string | null
+          registro_civil_url?: string | null
         }
         Relationships: [
           {
@@ -136,13 +213,55 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "jugadores_ciudad_id_fkey"
+            columns: ["ciudad_id"]
+            isOneToOne: false
+            referencedRelation: "ciudades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jugadores_departamento_id_fkey"
+            columns: ["departamento_id"]
+            isOneToOne: false
+            referencedRelation: "departamentos"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "jugadores_escuela_id_fkey"
             columns: ["escuela_id"]
             isOneToOne: false
             referencedRelation: "escuelas"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "jugadores_pais_id_fkey"
+            columns: ["pais_id"]
+            isOneToOne: false
+            referencedRelation: "paises"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      paises: {
+        Row: {
+          codigo: string | null
+          created_at: string | null
+          id: string
+          nombre: string
+        }
+        Insert: {
+          codigo?: string | null
+          created_at?: string | null
+          id?: string
+          nombre: string
+        }
+        Update: {
+          codigo?: string | null
+          created_at?: string | null
+          id?: string
+          nombre?: string
+        }
+        Relationships: []
       }
       usuarios: {
         Row: {
