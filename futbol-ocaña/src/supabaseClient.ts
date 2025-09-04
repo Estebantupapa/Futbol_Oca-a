@@ -1,4 +1,3 @@
-//supabaseClient.ts
 import { createClient } from '@supabase/supabase-js'
 import { Database } from './services/supabase.types'
 
@@ -75,8 +74,6 @@ const generateUniqueFileName = (originalName: string, documento: string, tipo: s
 // Función para subir foto de perfil
 export const uploadProfilePhoto = async (file: File, documento: string): Promise<FileUploadResult> => {
   try {
-    console.log('Uploading profile photo for document:', documento);
-    
     // Validaciones
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
     if (!validateFileType(file, allowedTypes)) {
@@ -90,7 +87,7 @@ export const uploadProfilePhoto = async (file: File, documento: string): Promise
     const fileName = generateUniqueFileName(file.name, documento, 'foto');
     const filePath = `fotos_perfil/${fileName}`;
     
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from('jugadores')
       .upload(filePath, file, {
         cacheControl: '3600',
@@ -107,7 +104,6 @@ export const uploadProfilePhoto = async (file: File, documento: string): Promise
       .from('jugadores')
       .getPublicUrl(filePath);
     
-    console.log('Profile photo uploaded successfully:', urlData.publicUrl);
     return { success: true, url: urlData.publicUrl };
     
   } catch (error: any) {
@@ -119,8 +115,6 @@ export const uploadProfilePhoto = async (file: File, documento: string): Promise
 // Función para subir documento PDF
 export const uploadDocumentPDF = async (file: File, documento: string): Promise<FileUploadResult> => {
   try {
-    console.log('Uploading document PDF for document:', documento);
-    
     // Validaciones
     const allowedTypes = ['application/pdf'];
     if (!validateFileType(file, allowedTypes)) {
@@ -134,7 +128,7 @@ export const uploadDocumentPDF = async (file: File, documento: string): Promise<
     const fileName = generateUniqueFileName(file.name, documento, 'documento');
     const filePath = `documentos/${fileName}`;
     
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from('jugadores')
       .upload(filePath, file, {
         cacheControl: '3600',
@@ -151,7 +145,6 @@ export const uploadDocumentPDF = async (file: File, documento: string): Promise<
       .from('jugadores')
       .getPublicUrl(filePath);
     
-    console.log('Document PDF uploaded successfully:', urlData.publicUrl);
     return { success: true, url: urlData.publicUrl };
     
   } catch (error: any) {
@@ -163,8 +156,6 @@ export const uploadDocumentPDF = async (file: File, documento: string): Promise<
 // Función para subir registro civil PDF
 export const uploadRegistroCivilPDF = async (file: File, documento: string): Promise<FileUploadResult> => {
   try {
-    console.log('Uploading registro civil PDF for document:', documento);
-    
     // Validaciones
     const allowedTypes = ['application/pdf'];
     if (!validateFileType(file, allowedTypes)) {
@@ -178,7 +169,7 @@ export const uploadRegistroCivilPDF = async (file: File, documento: string): Pro
     const fileName = generateUniqueFileName(file.name, documento, 'registro_civil');
     const filePath = `registros_civiles/${fileName}`;
     
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from('jugadores')
       .upload(filePath, file, {
         cacheControl: '3600',
@@ -195,7 +186,6 @@ export const uploadRegistroCivilPDF = async (file: File, documento: string): Pro
       .from('jugadores')
       .getPublicUrl(filePath);
     
-    console.log('Registro civil PDF uploaded successfully:', urlData.publicUrl);
     return { success: true, url: urlData.publicUrl };
     
   } catch (error: any) {
@@ -342,8 +332,6 @@ export const getUserEscuela = async () => {
 
 // Función para obtener todos los jugadores (solo para admins)
 export const getAllJugadores = async () => {
-  console.log('=== DEBUG GET ALL JUGADORES ===');
-  
   try {
     const { data, error } = await supabase
       .from('jugadores')
@@ -355,27 +343,14 @@ export const getAllJugadores = async () => {
       .eq('activo', true)
       .order('apellido', { ascending: true });
     
-    console.log('getAllJugadores result:', { data, error });
-    console.log('Number of players found:', data?.length || 0);
-    
-    if (error) {
-      console.error('Error in getAllJugadores:', error);
-    }
-    
-    console.log('=== END DEBUG GET ALL JUGADORES ===');
     return { data: data as Jugador[] | null, error };
-    
   } catch (catchError) {
-    console.error('Catch error in getAllJugadores:', catchError);
     return { data: null, error: catchError };
   }
 }
 
 // Función para obtener jugadores por escuela (para entrenadores)
 export const getJugadoresByEscuela = async (escuelaId: string) => {
-  console.log('=== DEBUG GET JUGADORES BY ESCUELA ===');
-  console.log('Escuela ID:', escuelaId);
-  
   try {
     const { data, error } = await supabase
       .from('jugadores')
@@ -388,18 +363,8 @@ export const getJugadoresByEscuela = async (escuelaId: string) => {
       .eq('activo', true)
       .order('apellido', { ascending: true });
     
-    console.log('getJugadoresByEscuela result:', { data, error });
-    console.log('Number of players found:', data?.length || 0);
-    
-    if (error) {
-      console.error('Error in getJugadoresByEscuela:', error);
-    }
-    
-    console.log('=== END DEBUG GET JUGADORES BY ESCUELA ===');
     return { data: data as Jugador[] | null, error };
-    
   } catch (catchError) {
-    console.error('Catch error in getJugadoresByEscuela:', catchError);
     return { data: null, error: catchError };
   }
 }
@@ -426,12 +391,7 @@ export const getEscuelas = async () => {
 
 // Función para crear un nuevo jugador
 export const createJugador = async (jugador: JugadorInsert) => {
-  console.log('=== DEBUG CREATE JUGADOR ===');
-  console.log('Received jugador data:', jugador);
-  
   try {
-    console.log('Attempting to insert into jugadores table...');
-    
     const { data, error } = await supabase
       .from('jugadores')
       .insert(jugador)
@@ -442,24 +402,8 @@ export const createJugador = async (jugador: JugadorInsert) => {
       `)
       .single();
     
-    console.log('Supabase response data:', data);
-    console.log('Supabase response error:', error);
-    
-    if (error) {
-      console.error('Supabase error details:', {
-        code: error.code,
-        message: error.message,
-        details: error.details,
-        hint: error.hint
-      });
-    }
-    
-    console.log('=== END DEBUG CREATE JUGADOR ===');
     return { data: data as Jugador | null, error };
-    
   } catch (catchError) {
-    console.error('Catch error in createJugador:', catchError);
-    console.log('=== END DEBUG CREATE JUGADOR ===');
     return { data: null, error: catchError };
   }
 };
@@ -486,9 +430,6 @@ export const updateJugador = async (id: string, updates: JugadorUpdate) => {
 
 // Función para desactivar un jugador (eliminación lógica)
 export const deactivateJugador = async (id: string) => {
-  console.log('=== DEBUG DEACTIVATE JUGADOR ===');
-  console.log('Deactivating player with ID:', id);
-  
   try {
     const { data, error } = await supabase
       .from('jugadores')
@@ -504,23 +445,14 @@ export const deactivateJugador = async (id: string) => {
       `)
       .single();
     
-    console.log('Deactivate result:', { data, error });
-    console.log('=== END DEBUG DEACTIVATE JUGADOR ===');
-    
     return { data: data as Jugador | null, error };
-    
   } catch (catchError) {
-    console.error('Catch error in deactivateJugador:', catchError);
-    console.log('=== END DEBUG DEACTIVATE JUGADOR ===');
     return { data: null, error: catchError };
   }
 };
 
 // Función para eliminar físicamente un jugador de la base de datos
 export const deleteJugadorPermanently = async (id: string) => {
-  console.log('=== DEBUG DELETE JUGADOR PERMANENTLY ===');
-  console.log('Permanently deleting player with ID:', id);
-  
   try {
     // Primero verificamos si el jugador existe
     const { data: checkData, error: checkError } = await supabase
@@ -529,49 +461,34 @@ export const deleteJugadorPermanently = async (id: string) => {
       .eq('id', id)
       .single();
     
-    console.log('Player check before deletion:', { checkData, checkError });
-    
     if (checkError) {
-      console.error('Player not found before deletion:', checkError);
       return { data: null, error: checkError };
     }
     
     // Ahora eliminamos el jugador permanentemente
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('jugadores')
       .delete()
       .eq('id', id);
     
-    console.log('Delete operation result:', { data, error });
-    
     if (error) {
-      console.error('Error during deletion:', error);
       return { data: null, error };
     }
     
     // Verificar que realmente se eliminó
-    const { data: verifyData, error: verifyError } = await supabase
+    const { data: verifyData } = await supabase
       .from('jugadores')
       .select('id')
       .eq('id', id)
       .single();
     
-    console.log('Verification after deletion:', { verifyData, verifyError });
-    
     if (verifyData) {
-      console.error('Player still exists after deletion!');
       return { data: null, error: { message: 'El jugador no pudo ser eliminado completamente' } };
     }
     
-    console.log('Player successfully deleted from database');
-    console.log('=== END DEBUG DELETE JUGADOR PERMANENTLY ===');
-    
     // Retornamos los datos del jugador que se eliminó
     return { data: checkData, error: null };
-    
   } catch (catchError) {
-    console.error('Catch error in deleteJugadorPermanently:', catchError);
-    console.log('=== END DEBUG DELETE JUGADOR PERMANENTLY ===');
     return { data: null, error: catchError };
   }
 };
@@ -587,9 +504,6 @@ export const deleteJugador = async (id: string, permanent: boolean = false) => {
 
 // Función para restaurar un jugador desactivado
 export const restoreJugador = async (id: string) => {
-  console.log('=== DEBUG RESTORE JUGADOR ===');
-  console.log('Restoring player with ID:', id);
-  
   try {
     const { data, error } = await supabase
       .from('jugadores')
@@ -605,14 +519,8 @@ export const restoreJugador = async (id: string) => {
       `)
       .single();
     
-    console.log('Restore result:', { data, error });
-    console.log('=== END DEBUG RESTORE JUGADOR ===');
-    
     return { data: data as Jugador | null, error };
-    
   } catch (catchError) {
-    console.error('Catch error in restoreJugador:', catchError);
-    console.log('=== END DEBUG RESTORE JUGADOR ===');
     return { data: null, error: catchError };
   }
 };
@@ -707,39 +615,32 @@ export type Ciudad = {
 
 // Función para obtener todos los países
 export const getPaises = async () => {
-  console.log('Getting países...');
   const { data, error } = await supabase
     .from('paises')
     .select('*')
     .order('nombre', { ascending: true })
   
-  console.log('Países result:', { data, error });
   return { data: data as Pais[] | null, error }
 }
 
 // Función para obtener departamentos por país
 export const getDepartamentosByPais = async (paisId: string) => {
-  console.log('Getting departamentos for país:', paisId);
   const { data, error } = await supabase
     .from('departamentos')
     .select('*')
     .eq('pais_id', paisId)
     .order('nombre', { ascending: true })
   
-  console.log('Departamentos result:', { data, error });
   return { data: data as Departamento[] | null, error }
 }
 
 // Función para obtener ciudades por departamento
 export const getCiudadesByDepartamento = async (departamentoId: string) => {
-  console.log('Getting ciudades for departamento:', departamentoId);
   const { data, error } = await supabase
     .from('ciudades')
     .select('*')
     .eq('departamento_id', departamentoId)
     .order('nombre', { ascending: true })
   
-  console.log('Ciudades result:', { data, error });
   return { data: data as Ciudad[] | null, error }
 }
-

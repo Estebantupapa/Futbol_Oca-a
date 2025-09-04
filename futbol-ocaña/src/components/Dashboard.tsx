@@ -1,9 +1,7 @@
-//Dashboard.tsx
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './Dashboard.css';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 import FileUpload from './fileUpload';
 import { 
   getAllJugadores, 
@@ -48,6 +46,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
   const [ciudades, setCiudades] = useState<Ciudad[]>([]);
   const [selectedPaisId, setSelectedPaisId] = useState<string>('');
   const [selectedDepartamentoId, setSelectedDepartamentoId] = useState<string>('');
+
+  // Estado para controlar operaciones bloqueantes
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingMessage, setProcessingMessage] = useState('');
+  
+  // Nuevo estado para controlar si hay documentos abiertos
+  const [documentOpened, setDocumentOpened] = useState(false);
+  const documentTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   // Estados para ubicaciones del modal de edición
   const [editPaises, setEditPaises] = useState<Pais[]>([]);
@@ -78,7 +84,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   
-  // Estado inicial del nuevo jugador - ESTABILIZADO
+  // Estado inicial del nuevo jugador
   const initialPlayerState = useMemo(() => ({
     documento: '',
     nombre: '',
@@ -95,9 +101,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
 
   const [newPlayer, setNewPlayer] = useState<Partial<JugadorInsert>>(initialPlayerState);
 
-  // FUNCIÓN PARA RECARGAR PLAYERS - SIN DEPENDENCIAS PARA EVITAR LOOPS
+  // FUNCIÓN PARA RECARGAR PLAYERS
   const reloadPlayers = useCallback(async () => {
-    console.log('=== RELOADING PLAYERS ===');
     try {
       let playersResult;
 
@@ -117,18 +122,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
       setPlayers(playersData);
       setFilteredPlayers(playersData);
       
-      console.log('Players reloaded successfully:', playersData.length);
-      
     } catch (err: any) {
       console.error('Error reloading players:', err);
       setError(err.message || 'Error recargando jugadores');
     }
-  }, []); // Sin dependencias para evitar loops
+  }, [currentUser.rol, currentUser.escuela_id]);
 
   // EFECTO PRINCIPAL - SE EJECUTA UNA SOLA VEZ AL MONTAR
   useEffect(() => {
-    console.log('=== DASHBOARD MOUNTING - INITIALIZING DATA ===');
-    
     const initializeData = async () => {
       try {
         setLoading(true);
@@ -164,7 +165,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
           }
         }
 
-        // Cargar jugadores DIRECTAMENTE aquí para evitar dependencias
+        // Cargar jugadores
         let playersResult;
         if (currentUser.rol === 'admin') {
           playersResult = await getAllJugadores();
@@ -182,8 +183,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
         setPlayers(playersData);
         setFilteredPlayers(playersData);
 
-        console.log('Initial data loaded successfully');
-
       } catch (err: any) {
         console.error('Error loading initial data:', err);
         setError(err.message || 'Error cargando datos iniciales');
@@ -193,23 +192,24 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
     };
 
     initializeData();
-  }, []); // Solo se ejecuta una vez al montar
+  }, [currentUser.rol, currentUser.escuela_id]);
 
-  // Filtrar jugadores - SOLO cuando cambien las dependencias necesarias
+  // Filtrar jugadores
   useEffect(() => {
-    let filtered = players.filter(player =>
-      `${player.nombre} ${player.apellido}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      player.documento.includes(searchTerm)
-    );
-
-    if (selectedCategory) {
-      filtered = filtered.filter(player => player.categoria_id === selectedCategory);
-    }
+    const filtered = players.filter(player => {
+      const matchesSearch = searchTerm === '' || 
+        `${player.nombre} ${player.apellido}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        player.documento.includes(searchTerm);
+      
+      const matchesCategory = !selectedCategory || player.categoria_id === selectedCategory;
+      
+      return matchesSearch && matchesCategory;
+    });
 
     setFilteredPlayers(filtered);
   }, [searchTerm, players, selectedCategory]);
 
-  // Cerrar dropdown - SOLO una vez
+  // Cerrar dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const dropdown = document.getElementById('category-dropdown');
@@ -228,7 +228,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
     };
   }, []);
 
-  // Funciones de carga de ubicaciones - ESTABLES
+  // Funciones de carga de ubicaciones
   const loadDepartamentosByPais = useCallback(async (paisId: string) => {
     try {
       const result = await getDepartamentosByPais(paisId);
@@ -306,10 +306,88 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
     }
   }, [fileErrors]);
 
-  // Funciones de manejo - ESTABLES
-  const handleLogout = useCallback(() => {
-    onLogout();
-  }, [onLogout]);
+  // Función para manejar la apertura de documentos (CORREGIDA)
+  const handleDocumentOpen = useCallback((url: string, filename: string) => {
+    setDocumentOpened(true);
+    
+    // Usar el método de apertura de ventana estándar
+    const newWindow = window.open('', '_blank');
+    
+    if (newWindow) {
+      // Crear un iframe para cargar el documento
+      newWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>${filename}</title>
+            <style>
+              body { margin: 0; padding: 20px; background: #f5f5f5; }
+              .container { max-width: 100%; height: 100vh; }
+              iframe { width: 100%; height: 100%; border: none; }
+              .header { padding: 10px; background: #fff; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; }
+              .btn { padding: 5px 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <h4>${filename}</h4>
+              <button class="btn" onclick="window.close()">Cerrar</button>
+            </div>
+            <div class="container">
+              <iframe src="${url}" title="${filename}"></iframe>
+            </div>
+          </body>
+        </html>
+      `);
+      newWindow.document.close();
+      
+      // Enfocar la nueva ventana
+      newWindow.focus();
+    } else {
+      // Fallback: descarga directa
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+    
+    // Restablecer después de un breve periodo
+    setTimeout(() => {
+      setDocumentOpened(false);
+    }, 500);
+  }, []);
+
+  // Efecto para limpiar el timer al desmontar
+  useEffect(() => {
+    return () => {
+      if (documentTimerRef.current) {
+        clearTimeout(documentTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Funciones de manejo
+  const handleLogout = useCallback(async () => {
+    if (isProcessing) {
+      const confirmed = window.confirm('Hay una operación en progreso. ¿Estás seguro de que deseas cerrar sesión?');
+      if (!confirmed) return;
+    }
+    
+    try {
+      setIsProcessing(false);
+      setProcessingMessage('');
+      
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      onLogout();
+    } catch (error) {
+      console.error('Error durante logout:', error);
+      onLogout();
+    }
+  }, [isProcessing, onLogout]);
 
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -367,7 +445,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
     setIsDarkMode(!isDarkMode);
   }, [isDarkMode]);
 
-  // Función para abrir modal del jugador - OPTIMIZADA
+  // Función para abrir modal del jugador
   const handlePlayerClick = useCallback(async (player: Jugador) => {
     setSelectedPlayer({...player});
     setOriginalPlayer({...player});
@@ -401,7 +479,21 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
     }
   }, [loadEditDepartamentosByPais, loadEditCiudadesByDepartamento]);
 
-  const closePlayerModal = useCallback(() => {
+  // Modificar la función closePlayerModal para manejar el estado de documentos
+  const closePlayerModal = useCallback(async () => {
+    if (isProcessing && !documentOpened) {
+      const confirmed = window.confirm('Hay una operación en progreso. ¿Estás seguro de que deseas cerrar?');
+      if (!confirmed) return;
+    }
+    
+    // Si hay un documento abierto, forzar el cierre
+    if (documentOpened) {
+      setDocumentOpened(false);
+    }
+    
+    setIsProcessing(false);
+    setProcessingMessage('');
+    
     setShowPlayerModal(false);
     setSelectedPlayer(null);
     setOriginalPlayer(null);
@@ -411,9 +503,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
     setEditDepartamentos([]);
     setEditCiudades([]);
     setError(null);
-  }, []);
+  }, [isProcessing, documentOpened]);
 
-  // Función para manejar cambios en inputs - OPTIMIZADA
+  // Función para manejar cambios en inputs
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
@@ -450,7 +542,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
     }
   }, [paises, departamentos, loadDepartamentosByPais, loadCiudadesByDepartamento]);
 
-  // Función para manejar cambios en edición - OPTIMIZADA
+  // Función para manejar cambios en edición
   const handleEditInputChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
@@ -486,7 +578,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
     }
   }, [selectedPlayer, editPaises, editDepartamentos, loadEditDepartamentosByPais, loadEditCiudadesByDepartamento]);
 
-  // Función para resetear formulario - ESTABLE CON ARCHIVOS
+  // Función para resetear formulario
   const resetPlayerForm = useCallback(() => {
     setNewPlayer(initialPlayerState);
     setSelectedPaisId('');
@@ -498,7 +590,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
     setError(null);
   }, [initialPlayerState]);
 
-  // Función para agregar jugador con archivos - OPTIMIZADA
+  // Función para agregar jugador con archivos
   const handleAddPlayer = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -520,8 +612,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
         return;
       }
 
-      console.log('Creating player with files...');
-      
       // Subir archivos
       const uploadResults = await uploadPlayerFiles(selectedFiles, newPlayer.documento);
       
@@ -560,12 +650,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
         return;
       }
 
-      // USAR reloadPlayers PARA RECARGAR
       await reloadPlayers();
       setShowAddModal(false);
       resetPlayerForm();
-      
-      console.log('Player created successfully');
       
     } catch (err: any) {
       console.error('Error adding player with files:', err);
@@ -575,7 +662,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
     }
   }, [newPlayer, selectedFiles, reloadPlayers, resetPlayerForm]);
 
-  // Función para actualizar jugador - OPTIMIZADA
+  // Función para actualizar jugador
   const handleUpdatePlayer = useCallback(async () => {
     if (!selectedPlayer || !originalPlayer) return;
 
@@ -598,12 +685,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
       
       if (result.error) throw result.error;
       
-      // USAR reloadPlayers PARA RECARGAR
       await reloadPlayers();
       setOriginalPlayer({...selectedPlayer});
       setIsEditing(false);
-      
-      console.log('Player updated successfully');
       
     } catch (err: any) {
       console.error('Error updating player:', err);
@@ -622,7 +706,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
     setError(null);
   }, [originalPlayer]);
 
-  // Función para eliminar jugador - OPTIMIZADA
+  // Función para eliminar jugador
   const handleDeletePlayer = useCallback(async (playerId: string) => {
     if (!selectedPlayer) {
       setError('No se ha seleccionado ningún jugador');
@@ -648,11 +732,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
         return;
       }
       
-      // USAR reloadPlayers PARA RECARGAR
       await reloadPlayers();
       closePlayerModal();
-      
-      console.log('Player deleted successfully');
       
     } catch (err: any) {
       console.error('Error deleting player:', err);
@@ -680,92 +761,283 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
     return age;
   }, []);
 
-  // FUNCIONES PARA LOS BOTONES
-
-  // Función para imprimir
-  const handlePrint = useCallback(() => {
-    if (!selectedPlayer) return;
+  // FUNCIÓN DE IMPRESIÓN
+  const handlePrint = useCallback(async () => {
+    if (!selectedPlayer || isProcessing) return;
     
-    const printContent = `
-      <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
-        <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="color: #2c3e50;">Corporación de Futbol Oceañero</h1>
-          <h2 style="color: #34495e;">Información del Jugador</h2>
-        </div>
-        
-        <div style="display: flex; gap: 30px; margin-bottom: 30px;">
-          <div style="flex: 1;">
-            ${selectedPlayer.foto_perfil_url ? 
-              `<img src="${selectedPlayer.foto_perfil_url}" alt="Foto del jugador" style="width: 200px; height: 200px; object-fit: cover; border-radius: 10px; border: 2px solid #ddd;">` :
-              `<div style="width: 200px; height: 200px; background: #f0f0f0; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 60px; color: #999;">👤</div>`
-            }
-          </div>
-          <div style="flex: 2;">
-            <h3 style="color: #2c3e50; margin-bottom: 20px;">${selectedPlayer.nombre} ${selectedPlayer.apellido}</h3>
-            <p><strong>Documento:</strong> ${selectedPlayer.documento}</p>
-            <p><strong>Edad:</strong> ${calculateAge(selectedPlayer.fecha_nacimiento)} años</p>
-            <p><strong>Fecha de Nacimiento:</strong> ${formatDate(selectedPlayer.fecha_nacimiento)}</p>
-            <p><strong>Categoría:</strong> ${selectedPlayer.categoria?.nombre || 'Sin categoría'}</p>
-            <p><strong>Escuela:</strong> ${selectedPlayer.escuela?.nombre || 'Sin escuela'}</p>
-          </div>
-        </div>
-        
-        <div style="border-top: 2px solid #eee; padding-top: 20px;">
-          <h4 style="color: #2c3e50; margin-bottom: 15px;">Información de Ubicación</h4>
-          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
-            <div><strong>País:</strong><br>${selectedPlayer.pais}</div>
-            <div><strong>Departamento:</strong><br>${selectedPlayer.departamento}</div>
-            <div><strong>Ciudad:</strong><br>${selectedPlayer.ciudad}</div>
-          </div>
-        </div>
-        
-        <div style="border-top: 2px solid #eee; padding-top: 20px; margin-top: 20px;">
-          <h4 style="color: #2c3e50; margin-bottom: 15px;">Información Médica</h4>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-            <div><strong>EPS:</strong><br>${selectedPlayer.eps}</div>
-            <div><strong>Tipo de EPS:</strong><br>${selectedPlayer.tipo_eps}</div>
-          </div>
-        </div>
-        
-        <div style="margin-top: 40px; text-align: center; color: #7f8c8d; font-size: 12px;">
-          <p>Documento generado el ${new Date().toLocaleDateString('es-CO')} a las ${new Date().toLocaleTimeString('es-CO')}</p>
-        </div>
-      </div>
-    `;
-
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(`
+    try {
+      setIsProcessing(true);
+      setProcessingMessage('Preparando impresión...');
+      
+      // Crear el contenido HTML
+      const printContent = `
         <!DOCTYPE html>
         <html>
           <head>
             <meta charset="utf-8">
             <title>Información del Jugador - ${selectedPlayer.nombre} ${selectedPlayer.apellido}</title>
             <style>
+              body { 
+                font-family: Arial, sans-serif; 
+                margin: 0; 
+                padding: 20px; 
+                background: white;
+              }
+              .print-container { 
+                max-width: 800px; 
+                margin: 0 auto; 
+                background: white;
+              }
+              .header { 
+                text-align: center; 
+                margin-bottom: 30px; 
+                border-bottom: 2px solid #2c3e50;
+                padding-bottom: 20px;
+              }
+              .header h1 { 
+                color: #2c3e50; 
+                margin: 0 0 10px 0; 
+                font-size: 24px;
+              }
+              .header h2 { 
+                color: #34495e; 
+                margin: 0; 
+                font-size: 18px;
+              }
+              .player-section { 
+                display: flex; 
+                gap: 30px; 
+                margin-bottom: 30px; 
+              }
+              .photo-section { 
+                flex: 0 0 200px; 
+              }
+              .player-photo { 
+                width: 200px; 
+                height: 200px; 
+                object-fit: cover; 
+                border-radius: 10px; 
+                border: 2px solid #ddd; 
+              }
+              .photo-placeholder { 
+                width: 200px; 
+                height: 200px; 
+                background: #f0f0f0; 
+                border-radius: 10px; 
+                display: flex; 
+                align-items: center; 
+                justify-content: center; 
+                font-size: 60px; 
+                color: #999; 
+              }
+              .info-section { 
+                flex: 1; 
+              }
+              .player-name { 
+                color: #2c3e50; 
+                margin-bottom: 20px; 
+                font-size: 22px; 
+                font-weight: bold;
+              }
+              .info-row { 
+                margin-bottom: 8px; 
+              }
+              .info-label { 
+                font-weight: bold; 
+                display: inline-block; 
+                width: 140px; 
+              }
+              .section { 
+                border-top: 2px solid #eee; 
+                padding-top: 20px; 
+                margin-top: 20px; 
+              }
+              .section-title { 
+                color: #2c3e50; 
+                margin-bottom: 15px; 
+                font-size: 18px; 
+                font-weight: bold;
+              }
+              .grid { 
+                display: grid; 
+                grid-template-columns: 1fr 1fr 1fr; 
+                gap: 20px; 
+              }
+              .grid-item { 
+                padding: 10px; 
+                background: #f8f9fa; 
+                border-radius: 5px; 
+              }
+              .grid-label { 
+                font-weight: bold; 
+                margin-bottom: 5px; 
+              }
+              .footer { 
+                margin-top: 40px; 
+                text-align: center; 
+                color: #7f8c8d; 
+                font-size: 12px; 
+                border-top: 1px solid #eee; 
+                padding-top: 20px; 
+              }
               @media print {
                 body { margin: 0; }
-                @page { margin: 1cm; }
+                @page { 
+                  margin: 1cm; 
+                  size: A4;
+                }
+                .print-container {
+                  max-width: none;
+                }
               }
             </style>
           </head>
-          <body>${printContent}</body>
+          <body>
+            <div class="print-container">
+              <div class="header">
+                <h1>Corporación de Futbol Oceañero</h1>
+                <h2>Información del Jugador</h2>
+              </div>
+              
+              <div class="player-section">
+                <div class="photo-section">
+                  ${selectedPlayer.foto_perfil_url ? 
+                    `<img src="${selectedPlayer.foto_perfil_url}" alt="Foto del jugador" class="player-photo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                     <div class="photo-placeholder" style="display:none;">👤</div>` :
+                    `<div class="photo-placeholder">👤</div>`
+                  }
+                </div>
+                <div class="info-section">
+                  <div class="player-name">${selectedPlayer.nombre} ${selectedPlayer.apellido}</div>
+                  <div class="info-row">
+                    <span class="info-label">Documento:</span>
+                    ${selectedPlayer.documento}
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">Edad:</span>
+                    ${calculateAge(selectedPlayer.fecha_nacimiento)} años
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">Fecha de Nacimiento:</span>
+                    ${formatDate(selectedPlayer.fecha_nacimiento)}
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">Categoría:</span>
+                    ${selectedPlayer.categoria?.nombre || 'Sin categoría'}
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">Escuela:</span>
+                    ${selectedPlayer.escuela?.nombre || 'Sin escuela'}
+                  </div>
+                </div>
+              </div>
+              
+              <div class="section">
+                <div class="section-title">Información de Ubicación</div>
+                <div class="grid">
+                  <div class="grid-item">
+                    <div class="grid-label">País</div>
+                    ${selectedPlayer.pais}
+                  </div>
+                  <div class="grid-item">
+                    <div class="grid-label">Departamento</div>
+                    ${selectedPlayer.departamento}
+                  </div>
+                  <div class="grid-item">
+                    <div class="grid-label">Ciudad</div>
+                    ${selectedPlayer.ciudad}
+                  </div>
+                </div>
+              </div>
+              
+              <div class="section">
+                <div class="section-title">Información Médica</div>
+                <div class="grid" style="grid-template-columns: 1fr 1fr;">
+                  <div class="grid-item">
+                    <div class="grid-label">EPS</div>
+                    ${selectedPlayer.eps}
+                  </div>
+                  <div class="grid-item">
+                    <div class="grid-label">Tipo de EPS</div>
+                    ${selectedPlayer.tipo_eps}
+                  </div>
+                </div>
+              </div>
+              
+              <div class="footer">
+                <p>Documento generado el ${new Date().toLocaleDateString('es-CO')} a las ${new Date().toLocaleTimeString('es-CO')}</p>
+              </div>
+            </div>
+          </body>
         </html>
-      `);
+      `;
+
+      // Abrir ventana de impresión
+      const printWindow = window.open('', '_blank', 'width=800,height=600');
+      
+      if (!printWindow) {
+        throw new Error('No se pudo abrir la ventana de impresión. Verifica que no esté bloqueada por el navegador.');
+      }
+
+      // Escribir el contenido
+      printWindow.document.open();
+      printWindow.document.write(printContent);
       printWindow.document.close();
+      
+      // Esperar a que se cargue el contenido
+      await new Promise<void>((resolve) => {
+        if (printWindow.document.readyState === 'complete') {
+          resolve();
+        } else {
+          printWindow.addEventListener('load', () => resolve());
+        }
+      });
+
+      // Pequeña pausa para asegurar que todo esté renderizado
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Enfocar y imprimir
       printWindow.focus();
       
+      // Usar un timeout para evitar problemas de timing
       setTimeout(() => {
-        printWindow.print();
-        printWindow.close();
-      }, 250);
+        try {
+          printWindow.print();
+          
+          // Cerrar la ventana después de imprimir (opcional)
+          setTimeout(() => {
+            try {
+              printWindow.close();
+            } catch (closeError) {
+              console.log('Ventana ya cerrada o no se pudo cerrar');
+            }
+          }, 1000);
+        } catch (printError: any) {
+          console.error('Error al imprimir:', printError);
+          setError('Error al ejecutar la impresión');
+        }
+      }, 100);
+      
+    } catch (error: any) {
+      console.error('Error en impresión:', error);
+      setError(`Error al preparar la impresión: ${error?.message || 'Error desconocido'}`);
+    } finally {
+      // Asegurar que siempre se resetee el estado
+      setIsProcessing(false);
+      setProcessingMessage('');
     }
-  }, [selectedPlayer]);
+  }, [selectedPlayer, isProcessing, calculateAge, formatDate]);
 
-  // Función para generar PDF de identificación
+  // FUNCIÓN PDF PARA GENERAR IDENTIFICACIÓN
   const handleDownloadID = useCallback(async () => {
-    if (!selectedPlayer) return;
+    if (!selectedPlayer || isProcessing || !selectedPlayer.foto_perfil_url) return;
 
     try {
+      setIsProcessing(true);
+      setProcessingMessage('Generando PDF...');
+      
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
@@ -838,14 +1110,19 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
       yPosition += 6;
       pdf.text(`Tipo de EPS: ${selectedPlayer.tipo_eps}`, 20, yPosition);
 
-      // Agregar foto si existe
+      // Imagen optimizada - SOLO SI HAY URL VÁLIDA
       if (selectedPlayer.foto_perfil_url) {
         try {
+          setProcessingMessage('Procesando imagen...');
+          
           const img = new Image();
           img.crossOrigin = 'anonymous';
           
-          await new Promise((resolve) => {
+          await new Promise<void>((resolve) => {
+            const timeout = setTimeout(() => resolve(), 3000);
+            
             img.onload = () => {
+              clearTimeout(timeout);
               try {
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
@@ -861,13 +1138,17 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
                   const imgData = canvas.toDataURL('image/jpeg', 0.8);
                   pdf.addImage(imgData, 'JPEG', 150, 35, maxWidth, maxHeight);
                 }
-                resolve(true);
+                resolve();
               } catch (err) {
-                console.warn('Error procesando imagen:', err);
-                resolve(false);
+                resolve();
               }
             };
-            img.onerror = () => resolve(false);
+            
+            img.onerror = () => {
+              clearTimeout(timeout);
+              resolve();
+            };
+            
             img.src = selectedPlayer.foto_perfil_url!;
           });
         } catch (err) {
@@ -881,39 +1162,87 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
       pdf.setTextColor(128, 128, 128);
       pdf.text(`Generado el ${now.toLocaleDateString('es-CO')} a las ${now.toLocaleTimeString('es-CO')}`, 105, 280, { align: 'center' });
 
-      const filename = `ID_${selectedPlayer.nombre}_${selectedPlayer.apellido}_${selectedPlayer.documento}.pdf`;
-      pdf.save(filename);
+      setProcessingMessage('Descargando archivo...');
       
-    } catch (error) {
+      setTimeout(() => {
+        const filename = `ID_${selectedPlayer.nombre}_${selectedPlayer.apellido}_${selectedPlayer.documento}.pdf`;
+        pdf.save(filename);
+        setIsProcessing(false);
+        setProcessingMessage('');
+      }, 100);
+      
+    } catch (error: any) {
       console.error('Error generando PDF:', error);
       setError('Error generando el PDF de identificación');
+      setIsProcessing(false);
+      setProcessingMessage('');
     }
-  }, [selectedPlayer]);
+  }, [selectedPlayer, isProcessing, calculateAge, formatDate]);
 
-  // Función para descargar registro
-  const handleDownloadRegister = useCallback(() => {
-    if (!selectedPlayer) return;
+  // FUNCIÓN DE DESCARGA DE REGISTRO
+  const handleDownloadRegister = useCallback(async () => {
+    if (!selectedPlayer || isProcessing) return;
 
-    if (selectedPlayer.registro_civil_url) {
-      const link = document.createElement('a');
-      link.href = selectedPlayer.registro_civil_url;
-      link.download = `Registro_Civil_${selectedPlayer.nombre}_${selectedPlayer.apellido}_${selectedPlayer.documento}.pdf`;
-      link.target = '_blank';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } else if (selectedPlayer.documento_pdf_url) {
-      const link = document.createElement('a');
-      link.href = selectedPlayer.documento_pdf_url;
-      link.download = `Documento_${selectedPlayer.nombre}_${selectedPlayer.apellido}_${selectedPlayer.documento}.pdf`;
-      link.target = '_blank';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } else {
-      setError('No hay documentos disponibles para descargar');
+    try {
+      setIsProcessing(true);
+      setProcessingMessage('Preparando descarga...');
+      
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      let downloadUrl = '';
+      let filename = '';
+
+      if (selectedPlayer.registro_civil_url) {
+        downloadUrl = selectedPlayer.registro_civil_url;
+        filename = `Registro_Civil_${selectedPlayer.nombre}_${selectedPlayer.apellido}_${selectedPlayer.documento}.pdf`;
+      } else if (selectedPlayer.documento_pdf_url) {
+        downloadUrl = selectedPlayer.documento_pdf_url;
+        filename = `Documento_${selectedPlayer.nombre}_${selectedPlayer.apellido}_${selectedPlayer.documento}.pdf`;
+      }
+
+      if (downloadUrl) {
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = filename;
+        link.target = '_blank';
+        link.style.display = 'none';
+        
+        document.body.appendChild(link);
+        
+        setTimeout(() => {
+          link.click();
+          setTimeout(() => {
+            document.body.removeChild(link);
+            setIsProcessing(false);
+            setProcessingMessage('');
+          }, 100);
+        }, 100);
+      } else {
+        setError('No hay documentos disponibles para descargar');
+        setIsProcessing(false);
+        setProcessingMessage('');
+      }
+      
+    } catch (error: any) {
+      console.error('Error en descarga:', error);
+      setError('Error al preparar la descarga');
+      setIsProcessing(false);
+      setProcessingMessage('');
     }
-  }, [selectedPlayer]);
+  }, [selectedPlayer, isProcessing]);
+
+  // TIMEOUT DE SEGURIDAD PARA EVITAR ESTADOS COLGADOS
+  useEffect(() => {
+    if (isProcessing) {
+      const safetyTimeout = setTimeout(() => {
+        console.warn('Timeout de seguridad: reseteando estado de procesamiento');
+        setIsProcessing(false);
+        setProcessingMessage('');
+      }, 15000); // 15 segundos máximo
+      
+      return () => clearTimeout(safetyTimeout);
+    }
+  }, [isProcessing]);
 
   // Loading state
   if (loading) {
@@ -948,7 +1277,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
                 />
                 <div className="company-info">
                   <h5 className="company-title mb-0">Corporación de</h5>
-                  <h5 className="company-title mb-0">Futbol Oceañero</h5>
+                  <h5 className="company-title mb-0">Futbol Ocañero</h5>
                 </div>
               </div>
             </div>
@@ -994,6 +1323,19 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
           ></button>
         </div>
       )}
+
+      {/* Indicador de procesamiento global */}
+      {isProcessing && (
+       <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" 
+       style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999 }}>
+       <div className="bg-white rounded p-4 text-center">
+       <div className="spinner-border text-primary mb-3" role="status">
+        <span className="visually-hidden">Procesando...</span>
+       </div>
+       <p className="mb-0">{processingMessage}</p>
+    </div>
+  </div>
+     )}
 
       <div className="dashboard-body">
         <div className="container-fluid h-100">
@@ -1297,7 +1639,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
 
       {/* Modal de información del jugador */}
       {showPlayerModal && selectedPlayer && (
-        <div className="modal-overlay" onClick={closePlayerModal}>
+        <div className={`modal-overlay ${documentOpened ? 'document-open' : ''}`} onClick={closePlayerModal}>
           <div className="player-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3 className="modal-title">
@@ -1315,7 +1657,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
                   <button 
                     className="btn btn-sm btn-outline-primary me-2"
                     onClick={() => setIsEditing(true)}
-                    disabled={isSaving}
+                    disabled={isSaving || documentOpened}
                   >
                     ✏️ Editar
                   </button>
@@ -1324,7 +1666,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
                     <button 
                       className="btn btn-sm btn-success me-2"
                       onClick={handleUpdatePlayer}
-                      disabled={isSaving}
+                      disabled={isSaving || documentOpened}
                     >
                       {isSaving ? (
                         <>
@@ -1338,7 +1680,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
                     <button 
                       className="btn btn-sm btn-secondary me-2"
                       onClick={handleCancelEdit}
-                      disabled={isSaving}
+                      disabled={isSaving || documentOpened}
                     >
                       ✕ Cancelar
                     </button>
@@ -1347,7 +1689,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
                 <button 
                   className="btn btn-sm btn-danger me-2"
                   onClick={() => handleDeletePlayer(selectedPlayer.id)}
-                  disabled={isSaving}
+                  disabled={isSaving || documentOpened}
                 >
                   🗑️ Eliminar
                 </button>
@@ -1397,32 +1739,42 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
                       )}
                     </div>
 
-                    {/* Sección de documentos */}
+                    {/* Sección de documentos CORREGIDA */}
                     <div className="documents-section mt-4">
                       <h5>DOCUMENTOS</h5>
                       <div className="document-links">
                         {selectedPlayer.documento_pdf_url && (
                           <div className="document-item mb-2">
-                            <a 
-                              href={selectedPlayer.documento_pdf_url} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
+                            <button
                               className="btn btn-sm btn-outline-primary w-100"
+                              onClick={() => handleDocumentOpen(
+                                selectedPlayer.documento_pdf_url!, 
+                                `Documento_${selectedPlayer.nombre}_${selectedPlayer.apellido}.pdf`
+                              )}
+                              disabled={documentOpened}
                             >
                               📄 Ver Documento de Identidad
-                            </a>
+                              {documentOpened && (
+                                <span className="ms-2 spinner-border spinner-border-sm" role="status"></span>
+                              )}
+                            </button>
                           </div>
                         )}
                         {selectedPlayer.registro_civil_url && (
                           <div className="document-item mb-2">
-                            <a 
-                              href={selectedPlayer.registro_civil_url} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
+                            <button
                               className="btn btn-sm btn-outline-secondary w-100"
+                              onClick={() => handleDocumentOpen(
+                                selectedPlayer.registro_civil_url!, 
+                                `Registro_Civil_${selectedPlayer.nombre}_${selectedPlayer.apellido}.pdf`
+                              )}
+                              disabled={documentOpened}
                             >
                               📋 Ver Registro Civil
-                            </a>
+                              {documentOpened && (
+                                <span className="ms-2 spinner-border spinner-border-sm" role="status"></span>
+                              )}
+                            </button>
                           </div>
                         )}
                         {!selectedPlayer.documento_pdf_url && !selectedPlayer.registro_civil_url && (
@@ -1637,31 +1989,31 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
               </div>
 
              <div className="modal-actions">
-  <button 
-    className="btn btn-primary action-btn"
-    onClick={handlePrint}
-    disabled={isSaving}
-    title="Imprimir información del jugador"
-  >
-    🖨️ IMPRIMIR
-  </button>
-  <button 
-    className="btn btn-success action-btn"
-    onClick={handleDownloadID}
-    disabled={isSaving}
-    title="Descargar tarjeta de identificación en PDF"
-  >
-    ⬇️ DESCARGAR ID
-  </button>
-  <button 
-    className="btn btn-info action-btn"
-    onClick={handleDownloadRegister}
-    disabled={isSaving}
-    title="Descargar registro o documento oficial"
-  >
-    ⬇️ DESCARGAR REGISTRO
-  </button>
-</div>
+              <button 
+                className="btn btn-primary action-btn"
+                onClick={handlePrint}
+                disabled={isSaving || isProcessing || documentOpened}
+                title="Imprimir información del jugador"
+              >
+                🖨️ IMPRIMIR
+              </button>
+              <button 
+                className="btn btn-success action-btn"
+                onClick={handleDownloadID}
+                disabled={isSaving || isProcessing || documentOpened}
+                title="Descargar tarjeta de identificación en PDF"
+              >
+                ⬇️ DESCARGAR ID
+              </button>
+              <button 
+                className="btn btn-info action-btn"
+                onClick={handleDownloadRegister}
+                disabled={isSaving || isProcessing || documentOpened}
+                title="Descargar registro o documento oficial"
+              >
+                ⬇️ DESCARGAR REGISTRO
+              </button>
+            </div>
             </div>
           </div>
         </div>

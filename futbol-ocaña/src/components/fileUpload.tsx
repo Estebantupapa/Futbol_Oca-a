@@ -1,4 +1,3 @@
-//fileUpload.tsx para sur archivos
 import React, { useState, useRef } from 'react';
 import './FileUpload.css';
 
@@ -163,15 +162,15 @@ const FileUpload: React.FC<FileUploadProps> = ({
                 <div className="file-icon">{getFileIcon()}</div>
                 <span className="file-name">{getFileName()}</span>
                 <button
-                  type="button"
-                  className="btn btn-sm btn-danger remove-file"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleRemoveFile();
-                  }}
-                >
-                  ✕ Quitar
-                </button>
+                    type="button"
+                    className="btn btn-sm btn-danger remove-file"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemoveFile();
+                    }}
+                  >
+                    ✕ Quitar
+                  </button>
               </div>
             )}
           </div>

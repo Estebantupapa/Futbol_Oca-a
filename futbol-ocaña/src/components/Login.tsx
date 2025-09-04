@@ -1,4 +1,3 @@
-//Login.tsx
 import React, { useState, useEffect } from 'react';
 import Dashboard from './Dashboard';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -75,111 +74,77 @@ const Login: React.FC = () => {
     if (error) setError('');
   };
 
-  // Reemplaza tu función handleSubmit con esta versión con debug completo:
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
 
-const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
-  setError('');
-  setIsLoading(true);
-
-  console.log('=== DEBUG LOGIN ===');
-  console.log('Form data:', formData);
-  console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
-  console.log('Supabase Key exists:', !!import.meta.env.VITE_SUPABASE_ANON_KEY);
-  
-  // Validaciones básicas
-  if (!formData.email.trim()) {
-    setError('El email es obligatorio');
-    setIsLoading(false);
-    return;
-  }
-
-  if (!formData.password.trim()) {
-    setError('La contraseña es obligatoria');
-    setIsLoading(false);
-    return;
-  }
-
-  try {
-    console.log('Attempting login with:', {
-      email: formData.email,
-      password: '***hidden***'
-    });
-
-    // Intentar login con Supabase
-    const { data, error: authError } = await supabase.auth.signInWithPassword({
-      email: formData.email.trim(),
-      password: formData.password.trim(),
-    });
-
-    console.log('Auth response data:', data);
-    console.log('Auth error:', authError);
-
-    if (authError) {
-      console.error('Auth error details:', {
-        message: authError.message,
-        status: authError.status,
-        name: authError.name,
-        stack: authError.stack
-      });
-
-      if (authError.message.includes('Invalid login credentials')) {
-        setError('Email o contraseña incorrectos');
-      } else if (authError.message.includes('Email not confirmed')) {
-        setError('Por favor confirma tu email antes de iniciar sesión');
-      } else if (authError.message.includes('signup_disabled')) {
-        setError('El registro está deshabilitado');
-      } else {
-        setError(`Error de autenticación: ${authError.message}`);
-      }
+    // Validaciones básicas
+    if (!formData.email.trim()) {
+      setError('El email es obligatorio');
       setIsLoading(false);
       return;
     }
 
-    if (data.user) {
-      console.log('User authenticated successfully:', data.user.id);
-      
-      // Obtener el perfil del usuario
-      console.log('Getting user profile...');
-      const profile = await getUserProfile();
-      
-      console.log('Profile response:', profile);
+    if (!formData.password.trim()) {
+      setError('La contraseña es obligatoria');
+      setIsLoading(false);
+      return;
+    }
 
-      if (profile?.error) {
-        console.error('Profile error:', profile.error);
-        setError('Error obteniendo el perfil del usuario');
-        await supabase.auth.signOut();
+    try {
+      // Intentar login con Supabase
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email: formData.email.trim(),
+        password: formData.password.trim(),
+      });
+
+      if (authError) {
+        if (authError.message.includes('Invalid login credentials')) {
+          setError('Email o contraseña incorrectos');
+        } else if (authError.message.includes('Email not confirmed')) {
+          setError('Por favor confirma tu email antes de iniciar sesión');
+        } else if (authError.message.includes('signup_disabled')) {
+          setError('El registro está deshabilitado');
+        } else {
+          setError(`Error de autenticación: ${authError.message}`);
+        }
         setIsLoading(false);
         return;
       }
 
-      if (profile?.data) {
-        console.log('Profile data:', profile.data);
+      if (data.user) {
+        // Obtener el perfil del usuario
+        const profile = await getUserProfile();
         
-        if (!profile.data.activo) {
-          setError('Tu cuenta está desactivada. Contacta al administrador.');
+        if (profile?.error) {
+          setError('Error obteniendo el perfil del usuario');
           await supabase.auth.signOut();
           setIsLoading(false);
           return;
         }
-        
-        console.log('Setting user and logging in...');
-        setUser(profile.data);
-        setIsLoggedIn(true);
-      } else {
-        console.error('No profile data found');
-        setError('No se encontró el perfil del usuario');
-        await supabase.auth.signOut();
+
+        if (profile?.data) {
+          if (!profile.data.activo) {
+            setError('Tu cuenta está desactivada. Contacta al administrador.');
+            await supabase.auth.signOut();
+            setIsLoading(false);
+            return;
+          }
+          
+          setUser(profile.data);
+          setIsLoggedIn(true);
+        } else {
+          setError('No se encontró el perfil del usuario');
+          await supabase.auth.signOut();
+        }
       }
+    } catch (error: any) {
+      setError(`Error de conexión: ${error.message}`);
+    } finally {
+      setIsLoading(false);
     }
-  } catch (error: any) {
-    console.error('Catch block error:', error);
-    setError(`Error de conexión: ${error.message}`);
-  } finally {
-    setIsLoading(false);
-    console.log('=== END DEBUG LOGIN ===');
-  }
-};
+  };
 
   const handleLogout = async () => {
     try {
@@ -234,7 +199,7 @@ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
                   <div className="logo-container mb-3">
                     <img 
                       src="./src/img/logo_bueno.png" 
-                      alt="Logo Corporación de Futbol Oceañero" 
+                      alt="Logo Corporación de Futbol Ocañero" 
                       className="logo-img"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = 'https://via.placeholder.com/50x50/4caf50/ffffff?text=O';
@@ -243,7 +208,7 @@ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
                   </div>
                   <h4 className="company-name">
                     Corporación de<br />
-                    Futbol Oceañero
+                    Futbol Ocañero
                   </h4>
                 </div>
 
@@ -313,13 +278,6 @@ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
                 <div className="login-info-text">
                   Las cuentas solo pueden ser creadas por<br />
                   administradores
-                </div>
-
-                {/* Información de prueba (remover en producción) */}
-                <div className="mt-3 p-2" style={{ background: '#f8f9fa', borderRadius: '4px', fontSize: '12px' }}>
-                  <strong>Credenciales de prueba:</strong><br />
-                  Admin: admin@futbolocañero.com / admin123<br />
-                  Entrenador: entrenador@athletic.com / entrenador123
                 </div>
               </div>
             </div>
