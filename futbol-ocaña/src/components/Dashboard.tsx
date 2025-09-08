@@ -1998,14 +1998,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
                 🖨️ IMPRIMIR
               </button>
               <button 
-                className="btn btn-success action-btn"
-                onClick={handleDownloadID}
-                disabled={isSaving || isProcessing || documentOpened}
-                title="Descargar tarjeta de identificación en PDF"
-              >
-                ⬇️ DESCARGAR ID
-              </button>
-              <button 
                 className="btn btn-info action-btn"
                 onClick={handleDownloadRegister}
                 disabled={isSaving || isProcessing || documentOpened}

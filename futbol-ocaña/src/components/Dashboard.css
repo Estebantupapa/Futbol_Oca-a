@@ -300,14 +300,14 @@
   }
 
   .document-input:focus {
-    border-color: #4caf50;
-    box-shadow: 0 0 0 0.2rem rgba(76, 175, 80, 0.25);
+    border-color: #5cb85c;
+    box-shadow: 0 0 0 0.2rem rgba(92, 184, 92, 0.25);
     background: white;
   }
 
   .dark-theme .document-input:focus {
     background: #4a4a4a;
-    border-color: #4caf50;
+    border-color: #5cb85c;
   }
 
   @media (max-width: 992px) {
@@ -560,6 +560,106 @@
   .action-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+
+  /* BOTONES ESPECÍFICOS CON COLORES */
+
+  /* Botones principales (Verde como el login) */
+  .btn-primary,
+  .action-btn.btn-primary,
+  .btn-success,
+  .action-btn.btn-success {
+    background: #5cb85c;
+    border-color: #5cb85c;
+    color: white;
+  }
+
+  .btn-primary:hover,
+  .action-btn.btn-primary:hover,
+  .btn-success:hover,
+  .action-btn.btn-success:hover {
+    background: #449d44;
+    border-color: #449d44;
+  }
+
+  .dark-theme .btn-primary,
+  .dark-theme .action-btn.btn-primary,
+  .dark-theme .btn-success,
+  .dark-theme .action-btn.btn-success {
+    background: #5cb85c;
+    border-color: #5cb85c;
+  }
+
+  /* Botones secundarios (Verde más claro) */
+  .btn-secondary,
+  .action-btn.btn-secondary,
+  .btn-outline-primary {
+    background: #6c757d;
+    border-color: #6c757d;
+    color: white;
+  }
+
+  .btn-secondary:hover,
+  .action-btn.btn-secondary:hover,
+  .btn-outline-primary:hover {
+    background: #5a6268;
+    border-color: #545b62;
+  }
+
+  /* Botones de información (Azul verdoso) */
+  .btn-info,
+  .action-btn.btn-info {
+    background: #17b87a;
+    border-color: #17b87a;
+    color: white;
+  }
+
+  .btn-info:hover,
+  .action-btn.btn-info:hover {
+    background: #138496;
+    border-color: #117a8b;
+  }
+
+  /* Botones de advertencia (Naranja) */
+  .btn-warning,
+  .action-btn.btn-warning {
+    background: #f0ad4e;
+    border-color: #f0ad4e;
+    color: white;
+  }
+
+  .btn-warning:hover,
+  .action-btn.btn-warning:hover {
+    background: #ec971f;
+    border-color: #d58512;
+  }
+
+  /* Botones de peligro (Rojo - se mantienen) */
+  .btn-danger,
+  .action-btn.btn-danger {
+    background: #dc3545;
+    border-color: #dc3545;
+    color: white;
+  }
+
+  .btn-danger:hover,
+  .action-btn.btn-danger:hover {
+    background: #c82333;
+    border-color: #bd2130;
+  }
+
+  /* Botones de descarga/imprimir (Verde) */
+  .btn-download,
+  .btn-print {
+    background: #5cb85c;
+    border-color: #5cb85c;
+    color: white;
+  }
+
+  .btn-download:hover,
+  .btn-print:hover {
+    background: #449d44;
+    border-color: #449d44;
   }
 
   @media (max-width: 768px) {
@@ -910,7 +1010,7 @@
 }
 
 .add-player-modal .modal-header {
-  background: linear-gradient(135deg, #007bff, #0056b3);
+  background: linear-gradient(135deg, #5cb85c, #449d44);
   color: white;
   padding: 15px 20px;
   border-radius: 12px 12px 0 0;
@@ -941,8 +1041,8 @@
 }
 
 .add-player-modal .form-control:focus {
-  border-color: #007bff;
-  box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+  border-color: #5cb85c;
+  box-shadow: 0 0 0 0.2rem rgba(92, 184, 92, 0.25);
 }
 
 /* ==========================================
@@ -991,7 +1091,7 @@
 
 .dark-theme .add-player-modal .form-control:focus {
   background: #363a3c;
-  border-color: #74b9ff;
+  border-color: #5cb85c;
   color: #ddd;
 }
 
@@ -1007,7 +1107,7 @@
 
 .dark-theme .avatar-placeholder {
   background: linear-gradient(45deg, #2d3436, #636e72);
-  color: #74b9ff;
+  color: #5cb85c;
 }
 
 /* ==========================================
@@ -1108,4 +1208,3 @@
   background-color: #2d3436;
   opacity: 0.7;
 }
-
