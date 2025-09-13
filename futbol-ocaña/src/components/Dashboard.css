@@ -1,3 +1,4 @@
+/*Dashboard.css*/
 .dashboard-container {
     height: 100vh;
     background: #f8f9fa;
@@ -1207,4 +1208,242 @@
 .dark-theme .form-control:disabled {
   background-color: #2d3436;
   opacity: 0.7;
+}
+
+/* ==========================================
+   ESTILOS PARA EL MENÚ HAMBURGUESA
+========================================== */
+
+.hamburger-menu-container {
+  position: relative;
+  display: inline-block;
+}
+
+.hamburger-button {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  padding: 0.5rem;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.hamburger-button:hover {
+  background: #e9ecef;
+  transform: scale(1.05);
+}
+
+.dark-theme .hamburger-button {
+  background: #404040;
+  border-color: #555;
+  color: #e0e0e0;
+}
+
+.dark-theme .hamburger-button:hover {
+  background: #4a4a4a;
+}
+
+.hamburger-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 200px;
+  z-index: 1000;
+  margin-top: 0.5rem;
+  animation: slideDown 0.2s ease-out;
+}
+
+.dark-theme .hamburger-menu {
+  background: #2d2d2d;
+  border-color: #404040;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hamburger-menu .user-info {
+  padding: 1rem;
+  border-bottom: 1px solid #e9ecef;
+  text-align: center;
+}
+
+.dark-theme .hamburger-menu .user-info {
+  border-bottom-color: #404040;
+}
+
+.hamburger-menu .user-info strong {
+  display: block;
+  font-size: 0.9rem;
+  color: #2c3e50;
+  margin-bottom: 0.25rem;
+}
+
+.dark-theme .hamburger-menu .user-info strong {
+  color: #e0e0e0;
+}
+
+.hamburger-menu .user-info .small {
+  font-size: 0.75rem;
+  color: #6c757d;
+}
+
+.dark-theme .hamburger-menu .user-info .small {
+  color: #bbb;
+}
+
+.hamburger-menu .btn {
+  width: 100%;
+  text-align: left;
+  padding: 0.75rem 1rem;
+  border: none;
+  background: none;
+  color: #495057;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.hamburger-menu .btn:hover {
+  background: #f8f9fa;
+  color: #5cb85c;
+  transform: translateX(4px);
+}
+
+.dark-theme .hamburger-menu .btn {
+  color: #e0e0e0;
+}
+
+.dark-theme .hamburger-menu .btn:hover {
+  background: #404040;
+  color: #5cb85c;
+}
+
+.hamburger-menu .btn:first-of-type {
+  border-radius: 0;
+  border-top: none;
+}
+
+.hamburger-menu .btn:last-of-type {
+  border-radius: 0 0 8px 8px;
+}
+
+/* Separador entre botones */
+.hamburger-menu .btn:not(:last-child) {
+  border-bottom: 1px solid #f1f1f1;
+}
+
+.dark-theme .hamburger-menu .btn:not(:last-child) {
+  border-bottom-color: #404040;
+}
+
+/* Responsive para el menú hamburguesa */
+@media (max-width: 768px) {
+  .hamburger-menu {
+    position: fixed;
+    top: auto;
+    right: 1rem;
+    bottom: 1rem;
+    left: 1rem;
+    min-width: auto;
+    max-width: 300px;
+    margin: 0 auto;
+  }
+  
+  .hamburger-button {
+    width: 35px;
+    height: 35px;
+    font-size: 0.9rem;
+  }
+}
+
+/* Efectos de hover mejorados */
+.hamburger-menu .btn::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 3px;
+  background: #5cb85c;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.hamburger-menu .btn:hover::before {
+  opacity: 1;
+}
+
+/* Animación de iconos */
+.hamburger-menu .btn i {
+  transition: transform 0.2s ease;
+}
+
+.hamburger-menu .btn:hover i {
+  transform: scale(1.2);
+}
+
+/* Ajustes para el nombre de usuario en header */
+.user-name {
+  margin-left: 0.5rem;
+  font-weight: 500;
+}
+
+@media (max-width: 576px) {
+  .user-name {
+    display: none;
+  }
+  
+  .hamburger-button {
+    margin-right: 0.5rem;
+  }
+}
+
+/* Estilo para cuando el menú está abierto */
+.hamburger-button.menu-open {
+  background: #5cb85c;
+  color: white;
+  border-color: #449d44;
+}
+
+.dark-theme .hamburger-button.menu-open {
+  background: #449d44;
+  border-color: #5cb85c;
+}
+
+/* Transición suave para el menú */
+.hamburger-menu {
+  transition: all 0.3s ease;
+  transform-origin: top right;
+}
+
+/* Mejora de accesibilidad */
+.hamburger-button:focus {
+  outline: 2px solid #5cb85c;
+  outline-offset: 2px;
+}
+
+.hamburger-menu .btn:focus {
+  outline: 2px solid #5cb85c;
+  outline-offset: -2px;
 }

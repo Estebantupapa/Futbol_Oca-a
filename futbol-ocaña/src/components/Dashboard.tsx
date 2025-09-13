@@ -23,7 +23,8 @@ import {
   JugadorInsert,
   Pais,
   Departamento,
-  Ciudad
+  Ciudad,
+  getUserProfile
 } from '../supabaseClient';
 
 interface DashboardProps {
@@ -83,6 +84,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Estado para el menú hamburguesa
+  const [showHamburgerMenu, setShowHamburgerMenu] = useState(false);
+  const hamburgerMenuRef = useRef<HTMLDivElement>(null);
+  
+  // Estados para el modal de perfil del usuario
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [userProfile, setUserProfile] = useState<Usuario | null>(null);
   
   // Estado inicial del nuevo jugador
   const initialPlayerState = useMemo(() => ({
@@ -214,11 +223,17 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
     const handleClickOutside = (event: MouseEvent) => {
       const dropdown = document.getElementById('category-dropdown');
       const button = document.getElementById('category-button');
+      const hamburgerMenu = hamburgerMenuRef.current;
       
       if (dropdown && button && 
           !dropdown.contains(event.target as Node) && 
           !button.contains(event.target as Node)) {
         setShowCategoryDropdown(false);
+      }
+      
+      // Cerrar menú hamburguesa si se hace clic fuera
+      if (hamburgerMenu && showHamburgerMenu && !hamburgerMenu.contains(event.target as Node)) {
+        setShowHamburgerMenu(false);
       }
     };
 
@@ -226,7 +241,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [showHamburgerMenu]);
 
   // Funciones de carga de ubicaciones
   const loadDepartamentosByPais = useCallback(async (paisId: string) => {
@@ -1244,6 +1259,32 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
     }
   }, [isProcessing]);
 
+  // Función para cargar el perfil del usuario
+  const loadUserProfile = useCallback(async () => {
+    try {
+      const result = await getUserProfile();
+      if (result?.data) {
+        setUserProfile(result.data);
+      }
+    } catch (error) {
+      console.error('Error cargando perfil de usuario:', error);
+      setError('Error al cargar el perfil');
+    }
+  }, []);
+
+  // Función para abrir el modal de perfil
+  const handleViewProfile = useCallback(async () => {
+    setShowHamburgerMenu(false);
+    await loadUserProfile();
+    setShowProfileModal(true);
+  }, [loadUserProfile]);
+
+  // Función para cerrar el modal de perfil
+  const closeProfileModal = useCallback(() => {
+    setShowProfileModal(false);
+    setUserProfile(null);
+  }, []);
+
   // Loading state
   if (loading) {
     return (
@@ -1299,13 +1340,53 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
                 >
                   {isDarkMode ? '☀️' : '🌙'}
                 </button>
-                <button 
-                  className="btn btn-warning btn-sm me-3"
-                  onClick={handleLogout}
-                >
-                  Cerrar Sesión
-                </button>
-                <span className="user-name">{currentUser.nombre} {currentUser.apellido}</span>
+                
+                {/* Menú hamburguesa */}
+                <div className="hamburger-menu-container position-relative" ref={hamburgerMenuRef}>
+                  <button 
+                    className={`btn btn-sm btn-outline-secondary hamburger-button ${showHamburgerMenu ? 'menu-open' : ''}`}
+                    onClick={() => setShowHamburgerMenu(!showHamburgerMenu)}
+                  >
+                    ☰
+                  </button>
+                  
+                  {showHamburgerMenu && (
+                    <div className="hamburger-menu position-absolute bg-white border rounded shadow-sm mt-1 end-0">
+                      <div className="p-2">
+                        <div className="user-info p-2 border-bottom mb-2">
+                          <strong>{currentUser.nombre} {currentUser.apellido}</strong>
+                          <div className="small text-muted">{currentUser.email}</div>
+                        </div>
+                        
+                        <button 
+                          className="btn btn-sm w-100 mb-1 text-start"
+                          onClick={handleViewProfile}
+                        >
+                          👤 Ver mi perfil
+                        </button>
+
+                        <button
+                          className="btn btn-primary w-100 mt-3"
+                          onClick={() => setShowAddModal(true)}
+                          >
+                          ➕ Agregar Jugador
+                        </button>
+                        
+                        <button 
+                          className="btn btn-sm w-100 mb-1 text-start"
+                          onClick={() => {
+                            setShowHamburgerMenu(false);
+                            handleLogout();
+                          }}
+                        >
+                          🚪 Cerrar sesión
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                <span className="user-name ms-2">{currentUser.nombre} {currentUser.apellido}</span>
               </div>
             </div>
           </div>
@@ -1523,12 +1604,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
                   )}
                 </div>
 
-                <button
-                  className="btn btn-primary w-100 mt-3"
-                  onClick={() => setShowAddModal(true)}
-                >
-                  ➕ Agregar Jugador
-                </button>
+                
               </div>
             </div>
 
@@ -1678,12 +1754,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
                       )}
                     </button>
                     <button 
-                      className="btn btn-sm btn-secondary me-2"
-                      onClick={handleCancelEdit}
-                      disabled={isSaving || documentOpened}
-                    >
-                      ✕ Cancelar
-                    </button>
+                    className="btn btn-sm btn-secondary me-2"
+                    onClick={handleCancelEdit}
+                    disabled={isSaving || documentOpened}
+                  >
+                    ✕ Cancelar
+                  </button>
                   </>
                 )}
                 <button 
@@ -1988,24 +2064,32 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
                 </div>
               </div>
 
-             <div className="modal-actions">
-              <button 
-                className="btn btn-primary action-btn"
-                onClick={handlePrint}
-                disabled={isSaving || isProcessing || documentOpened}
-                title="Imprimir información del jugador"
-              >
-                🖨️ IMPRIMIR
-              </button>
-              <button 
-                className="btn btn-info action-btn"
-                onClick={handleDownloadRegister}
-                disabled={isSaving || isProcessing || documentOpened}
-                title="Descargar registro o documento oficial"
-              >
-                ⬇️ DESCARGAR REGISTRO
-              </button>
-            </div>
+              <div className="modal-actions">
+                <button 
+                  className="btn btn-primary action-btn"
+                  onClick={handlePrint}
+                  disabled={isSaving || isProcessing || documentOpened}
+                  title="Imprimir información del jugador"
+                >
+                  🖨️ IMPRIMIR
+                </button>
+                <button 
+                  className="btn btn-info action-btn"
+                  onClick={handleDownloadID}
+                  disabled={isSaving || isProcessing || documentOpened || !selectedPlayer.foto_perfil_url}
+                  title="Descargar identificación en PDF"
+                >
+                  📄 DESCARGAR ID
+                </button>
+                <button 
+                  className="btn btn-success action-btn"
+                  onClick={handleDownloadRegister}
+                  disabled={isSaving || isProcessing || documentOpened}
+                  title="Descargar registro o documento oficial"
+                >
+                  ⬇️ DESCARGAR REGISTRO
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -2367,6 +2451,115 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de perfil del usuario */}
+      {showProfileModal && (
+        <div className="modal-overlay" onClick={closeProfileModal}>
+          <div className="player-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+            <div className="modal-header">
+              <h3 className="modal-title">
+                MI PERFIL
+              </h3>
+              <button 
+                className="close-button" 
+                onClick={closeProfileModal}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="modal-body">
+              <div className="row">
+                
+
+                <div className="col-md-8">
+                  <div className="info-section">
+                    <div className="info-field">
+                      <label>NOMBRE COMPLETO</label>
+                      <input 
+                        type="text" 
+                        value={`${userProfile?.nombre || ''} ${userProfile?.apellido || ''}`} 
+                        readOnly 
+                        className="form-control readonly-input"
+                      />
+                    </div>
+
+                    <div className="info-field">
+                      <label>EMAIL</label>
+                      <input 
+                        type="text" 
+                        value={userProfile?.email || ''} 
+                        readOnly 
+                        className="form-control readonly-input"
+                      />
+                    </div>
+
+                    <div className="info-field">
+                      <label>ROL</label>
+                      <input 
+                        type="text" 
+                        value={userProfile?.rol === 'admin' ? 'Administrador' : 'Entrenador'} 
+                        readOnly 
+                        className="form-control readonly-input"
+                      />
+                    </div>
+
+                    {userProfile?.escuela && (
+                      <div className="info-field">
+                        <label>ESCUELA/CLUB</label>
+                        <input 
+                          type="text" 
+                          value={userProfile.escuela.nombre} 
+                          readOnly 
+                          className="form-control readonly-input"
+                        />
+                      </div>
+                    )}
+
+                    <div className="info-field">
+                      <label>ESTADO</label>
+                      <input 
+                        type="text" 
+                        value={userProfile?.activo ? 'Activo' : 'Inactivo'} 
+                        readOnly 
+                        className="form-control readonly-input"
+                      />
+                    </div>
+
+                    <div className="info-field">
+                      <label>FECHA DE REGISTRO</label>
+                      <input 
+                        type="text" 
+                        value={userProfile?.created_at ? formatDate(userProfile.created_at) : 'No disponible'} 
+                        readOnly 
+                        className="form-control readonly-input"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="modal-actions">
+                <button 
+                  className="btn btn-primary action-btn"
+                  onClick={() => {
+                    // Aquí puedes implementar la funcionalidad de editar perfil
+                    alert('Funcionalidad de editar perfil en desarrollo');
+                  }}
+                >
+                  ✏️ Editar Perfil
+                </button>
+                <button 
+                  className="btn btn-secondary action-btn"
+                  onClick={closeProfileModal}
+                >
+                  Cerrar
+                </button>
+              </div>
             </div>
           </div>
         </div>
