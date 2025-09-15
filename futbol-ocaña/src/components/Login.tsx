@@ -1,8 +1,9 @@
+//login.tsx
 import React, { useState, useEffect } from 'react';
-import Dashboard from './Dashboard';
+import Dashboard from './Dasboard/coach/Dashboard';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './login.css';
-import { supabase, getUserProfile, Usuario } from '../supabaseClient';
+import { supabase, getUserProfile, Usuario } from '../services/supabaseClient';
 
 interface LoginForm {
   email: string;

@@ -1,6 +1,6 @@
 // supabaseClient.ts
 import { createClient } from '@supabase/supabase-js'
-import { Database } from './services/supabase.types'
+import { Database } from './supabase.types'
 
 // Debug: Verificar que las variables se están cargando
 console.log('Variables de entorno:')
