@@ -1,27 +1,38 @@
-//coach/CoachSidebar.tsx
 import React from 'react';
-import { CoachSidebarProps } from '../types/coachTypes';
-import PlayerItem from './PlayerItem';
+import { AdminSidebarProps } from '../admin/types/adminTypes';
+import PlayerItem from '../coach/components/PlayerItem';
 
-const CoachSidebar: React.FC<CoachSidebarProps> = ({
+const AdminSidebar: React.FC<AdminSidebarProps> = ({
   searchTerm,
   selectedCategory,
+  selectedSchool,
   showCategoryDropdown,
+  showSchoolDropdown,
   players,
   filteredPlayers,
   categorias,
-  currentUser,
+  escuelas,
+  //currentUser,
   loading,
   onSearchChange,
   onCategorySelect,
+  onSchoolSelect,
   onClearCategory,
+  onClearSchool,
   onToggleCategoryDropdown,
+  onToggleSchoolDropdown,
   onPlayerClick
 }) => {
   const getSelectedCategoryName = () => {
     if (!selectedCategory) return 'Todas las categorías';
     const category = categorias.find(cat => cat.id === selectedCategory);
     return category?.nombre || 'Categoría desconocida';
+  };
+
+  const getSelectedSchoolName = () => {
+    if (!selectedSchool) return 'Todas las escuelas';
+    const school = escuelas.find(esc => esc.id === selectedSchool);
+    return school?.nombre || 'Escuela desconocida';
   };
 
   return (
@@ -37,9 +48,6 @@ const CoachSidebar: React.FC<CoachSidebarProps> = ({
               title="Filtrar por categoría"
             >
               <span className="me-1">📋</span>
-              <span className="d-none d-md-inline">
-                {selectedCategory ? '✓' : ''}
-              </span>
             </button>
             
             {showCategoryDropdown && (
@@ -84,6 +92,59 @@ const CoachSidebar: React.FC<CoachSidebarProps> = ({
             )}
           </div>
 
+          {/* Botón de escuelas */}
+          <div className="position-relative me-2">
+            <button 
+              id="school-button"
+              className={`btn btn-outline-secondary btn-sm d-flex align-items-center ${selectedSchool ? 'btn-success text-white' : ''}`}
+              onClick={onToggleSchoolDropdown}
+              title="Filtrar por escuela"
+            >
+              <span className="me-1">🏫</span>
+            </button>
+            
+            {showSchoolDropdown && (
+              <div 
+                id="school-dropdown"
+                className="position-absolute bg-white border rounded shadow-sm mt-1"
+                style={{ 
+                  zIndex: 1000, 
+                  minWidth: '200px',
+                  maxHeight: '300px',
+                  overflowY: 'auto',
+                  left: 0
+                }}
+              >
+                <div className="p-2">
+                  <div className="fw-bold mb-2 text-muted small">Filtrar por escuela:</div>
+                  
+                  <button
+                    className={`btn btn-sm w-100 mb-1 text-start ${!selectedSchool ? 'btn-success' : 'btn-outline-secondary'}`}
+                    onClick={onClearSchool}
+                  >
+                    <span className="me-2">🏫</span>
+                    Todas las escuelas
+                    {!selectedSchool && <span className="float-end">✓</span>}
+                  </button>
+                  
+                  {escuelas.map(escuela => (
+                    <button
+                      key={escuela.id}
+                      className={`btn btn-sm w-100 mb-1 text-start ${
+                        selectedSchool === escuela.id ? 'btn-success' : 'btn-outline-secondary'
+                      }`}
+                      onClick={() => onSchoolSelect(escuela.id)}
+                    >
+                      <span className="me-2">🏫</span>
+                      {escuela.nombre}
+                      {selectedSchool === escuela.id && <span className="float-end">✓</span>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Barra de búsqueda */}
           <div className="search-input-container flex-grow-1">
             <input
@@ -104,10 +165,10 @@ const CoachSidebar: React.FC<CoachSidebarProps> = ({
           </div>
         </div>
         
-        {/* Mostrar filtro activo */}
-        {selectedCategory && (
-          <div className="mb-3">
-            <span className="badge bg-primary d-flex align-items-center justify-content-between">
+        {/* Mostrar filtros activos */}
+        <div className="d-flex flex-wrap gap-2 mb-3">
+          {selectedCategory && (
+            <span className="badge bg-primary d-flex align-items-center">
               <span>📋 {getSelectedCategoryName()}</span>
               <button 
                 className="btn btn-sm p-0 ms-2 text-white border-0 bg-transparent"
@@ -117,27 +178,32 @@ const CoachSidebar: React.FC<CoachSidebarProps> = ({
                 ✕
               </button>
             </span>
-          </div>
-        )}
+          )}
+          
+          {selectedSchool && (
+            <span className="badge bg-success d-flex align-items-center">
+              <span>🏫 {getSelectedSchoolName()}</span>
+              <button 
+                className="btn btn-sm p-0 ms-2 text-white border-0 bg-transparent"
+                onClick={onClearSchool}
+                style={{ fontSize: '12px', lineHeight: '1' }}
+              >
+                ✕
+              </button>
+            </span>
+          )}
+        </div>
         
         {/* Estadísticas rápidas */}
         <div className="stats-section mb-3">
           <div className="small text-muted">
-            {selectedCategory || searchTerm ? (
+            {selectedCategory || selectedSchool || searchTerm ? (
               <>
-                Mostrando: <strong>{filteredPlayers.length}</strong> de {players.length}
-                {selectedCategory && (
-                  <div className="mt-1">
-                    Categoría: <strong>{getSelectedCategoryName()}</strong>
-                  </div>
-                )}
+                Mostrando: <strong>{filteredPlayers.length}</strong> de {players.length} jugadores
               </>
             ) : (
               <>
                 Total jugadores: <strong>{filteredPlayers.length}</strong>
-                {currentUser.rol === 'admin' && (
-                  <span> de {players.length}</span>
-                )}
               </>
             )}
           </div>
@@ -157,17 +223,18 @@ const CoachSidebar: React.FC<CoachSidebarProps> = ({
         {filteredPlayers.length === 0 && !loading && (
           <div className="text-center py-4">
             <div className="text-muted">
-              {selectedCategory || searchTerm ? 
+              {selectedCategory || selectedSchool || searchTerm ? 
                 'No se encontraron jugadores con los filtros aplicados' : 
-                (searchTerm ? 'No se encontraron jugadores' : 'No hay jugadores registrados')
+                'No hay jugadores registrados en el sistema'
               }
-              {(selectedCategory || searchTerm) && (
+              {(selectedCategory || selectedSchool || searchTerm) && (
                 <div className="mt-2">
                   <button 
                     className="btn btn-sm btn-outline-secondary"
                     onClick={() => {
                       onSearchChange('');
                       onClearCategory();
+                      onClearSchool();
                     }}
                   >
                     Limpiar filtros
@@ -182,4 +249,4 @@ const CoachSidebar: React.FC<CoachSidebarProps> = ({
   );
 };
 
-export default CoachSidebar;
+export default AdminSidebar;

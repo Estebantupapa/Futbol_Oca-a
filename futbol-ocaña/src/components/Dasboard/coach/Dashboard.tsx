@@ -1,3 +1,4 @@
+//Dashboard.tsx
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '../../Dashboard.css';
@@ -1006,57 +1007,133 @@ const handlePrint = useCallback(async () => {
   }
 }, [selectedPlayer, isProcessing]);
 
-  // FUNCIÓN DE DESCARGA DE REGISTRO
-  const handleDownloadRegister = useCallback(async () => {
-    if (!selectedPlayer || isProcessing) return;
+ // FUNCIÓN DE DESCARGA DE REGISTRO MEJORADA
+const handleDownloadRegister = useCallback(async () => {
+  if (!selectedPlayer || isProcessing) return;
 
-    try {
-      setIsProcessing(true);
-      setProcessingMessage('Preparando descarga...');
-      
-      await new Promise(resolve => setTimeout(resolve, 100));
+  try {
+    setIsProcessing(true);
+    setProcessingMessage('Preparando descarga...');
+    
+    // Array para almacenar las URLs de los documentos disponibles
+    const documentsToDownload = [];
+    
+    if (selectedPlayer.registro_civil_url) {
+      documentsToDownload.push({
+        url: selectedPlayer.registro_civil_url,
+        filename: `Registro_Civil_${selectedPlayer.nombre}_${selectedPlayer.apellido}_${selectedPlayer.documento}.pdf`,
+        type: 'registro_civil'
+      });
+    }
+    
+    if (selectedPlayer.documento_pdf_url) {
+      documentsToDownload.push({
+        url: selectedPlayer.documento_pdf_url,
+        filename: `Documento_Identidad_${selectedPlayer.nombre}_${selectedPlayer.apellido}_${selectedPlayer.documento}.pdf`,
+        type: 'documento_identidad'
+      });
+    }
 
-      let downloadUrl = '';
-      let filename = '';
-
-      if (selectedPlayer.registro_civil_url) {
-        downloadUrl = selectedPlayer.registro_civil_url;
-        filename = `Registro_Civil_${selectedPlayer.nombre}_${selectedPlayer.apellido}_${selectedPlayer.documento}.pdf`;
-      } else if (selectedPlayer.documento_pdf_url) {
-        downloadUrl = selectedPlayer.documento_pdf_url;
-        filename = `Documento_${selectedPlayer.nombre}_${selectedPlayer.apellido}_${selectedPlayer.documento}.pdf`;
-      }
-
-      if (downloadUrl) {
-        const link = document.createElement('a');
-        link.href = downloadUrl;
-        link.download = filename;
-        link.target = '_blank';
-        link.style.display = 'none';
-        
-        document.body.appendChild(link);
-        
-        setTimeout(() => {
-          link.click();
-          setTimeout(() => {
-            document.body.removeChild(link);
-            setIsProcessing(false);
-            setProcessingMessage('');
-          }, 100);
-        }, 100);
-      } else {
-        setError('No hay documentos disponibles para descargar');
-        setIsProcessing(false);
-        setProcessingMessage('');
-      }
-      
-    } catch (error: any) {
-      console.error('Error en descarga:', error);
-      setError('Error al preparar la descarga');
+    if (documentsToDownload.length === 0) {
+      setError('No hay documentos disponibles para descargar');
       setIsProcessing(false);
       setProcessingMessage('');
+      return;
     }
-  }, [selectedPlayer, isProcessing]);
+
+    // Función para descargar un archivo individual
+    const downloadFile = async (fileInfo: {url: string, filename: string, type: string}) => {
+      return new Promise<void>(async (resolve, reject) => {
+        try {
+          console.log(`Iniciando descarga de: ${fileInfo.filename}`);
+          
+          // Intentar descargar usando fetch y Blob (método más confiable)
+          const response = await fetch(fileInfo.url);
+          
+          if (!response.ok) {
+            throw new Error(`Error al obtener el archivo: ${response.status} ${response.statusText}`);
+          }
+          
+          const blob = await response.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          
+          const link = document.createElement('a');
+          link.href = blobUrl;
+          link.download = fileInfo.filename;
+          link.style.display = 'none';
+          
+          document.body.appendChild(link);
+          
+          // Disparar el evento de clic
+          link.click();
+          
+          // Limpiar después de un tiempo
+          setTimeout(() => {
+            document.body.removeChild(link);
+            URL.revokeObjectURL(blobUrl);
+            resolve();
+          }, 100);
+          
+        } catch (error) {
+          console.error(`Error descargando ${fileInfo.type}:`, error);
+          
+          // Fallback: intentar con el método tradicional
+          try {
+            const link = document.createElement('a');
+            link.href = fileInfo.url;
+            link.download = fileInfo.filename;
+            link.target = '_blank';
+            link.style.display = 'none';
+            
+            document.body.appendChild(link);
+            link.click();
+            
+            setTimeout(() => {
+              document.body.removeChild(link);
+              resolve();
+            }, 100);
+          } catch (fallbackError) {
+            reject(`No se pudo descargar el ${fileInfo.type}`);
+          }
+        }
+      });
+    };
+
+    // Descargar todos los documentos disponibles
+    if (documentsToDownload.length === 1) {
+      // Si solo hay un documento, descargarlo directamente
+      await downloadFile(documentsToDownload[0]);
+      setProcessingMessage('Descarga completada');
+    } else {
+      // Si hay múltiples documentos, descargarlos secuencialmente
+      setProcessingMessage(`Descargando 1 de ${documentsToDownload.length} documentos...`);
+      
+      for (let i = 0; i < documentsToDownload.length; i++) {
+        setProcessingMessage(`Descargando ${i + 1} de ${documentsToDownload.length} documentos...`);
+        await downloadFile(documentsToDownload[i]);
+        
+        // Pequeña pausa entre descargas
+        if (i < documentsToDownload.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+      
+      setProcessingMessage('Todos los documentos descargados');
+    }
+
+    // Mostrar mensaje de éxito
+    setTimeout(() => {
+      setIsProcessing(false);
+      setProcessingMessage('');
+    }, 1000);
+    
+  } catch (error: any) {
+    console.error('Error en descarga:', error);
+    setError(`Error al descargar documentos: ${error.message || 'Error desconocido'}`);
+    setIsProcessing(false);
+    setProcessingMessage('');
+  }
+}, [selectedPlayer, isProcessing]);
 
   // FUNCIÓN PDF PARA GENERAR IDENTIFICACIÓN
 const handleDownloadID = useCallback(async () => {

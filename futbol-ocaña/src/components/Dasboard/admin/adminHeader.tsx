@@ -1,26 +1,16 @@
-//coach/CoachHeader.tsx
 import React from 'react';
+import { AdminHeaderProps } from '../admin/types/adminTypes';
 
-interface CoachHeaderProps {
-  currentUser: any;
-  isDarkMode: boolean;
-  showHamburgerMenu: boolean;
-  onToggleDarkMode: () => void;
-  onToggleHamburgerMenu: () => void;
-  onViewProfile: () => void;
-  onAddPlayer: () => void;
-  onLogout: () => void;
-  hamburgerMenuRef: React.RefObject<HTMLDivElement>;
-}
-
-const CoachHeader: React.FC<CoachHeaderProps> = ({
+const AdminHeader: React.FC<AdminHeaderProps> = ({
   currentUser,
   isDarkMode,
   showHamburgerMenu,
   onToggleDarkMode,
   onToggleHamburgerMenu,
   onViewProfile,
-  onAddPlayer,
+  onAddAdmin,
+  onAddCoach,
+  onAddSchool,
   onLogout,
   hamburgerMenuRef
 }) => {
@@ -41,6 +31,7 @@ const CoachHeader: React.FC<CoachHeaderProps> = ({
               <div className="company-info">
                 <h5 className="company-title mb-0">Corporación de</h5>
                 <h5 className="company-title mb-0">Futbol Ocañero</h5>
+                <small className="text-muted">Panel de Administración</small>
               </div>
             </div>
           </div>
@@ -48,13 +39,9 @@ const CoachHeader: React.FC<CoachHeaderProps> = ({
           <div className="col-auto">
             <div className="user-section d-flex align-items-center">
               <span className="badge bg-primary me-3">
-                {currentUser.rol === 'admin' ? 'Administrador' : 'Entrenador'}
+                Administrador
               </span>
-              {currentUser.escuela && (
-                <span className="badge bg-secondary me-3">
-                  {currentUser.escuela.nombre}
-                </span>
-              )}
+              
               <button 
                 className="btn btn-sm theme-toggle me-3"
                 onClick={onToggleDarkMode}
@@ -77,6 +64,7 @@ const CoachHeader: React.FC<CoachHeaderProps> = ({
                       <div className="user-info p-2 border-bottom mb-2">
                         <strong>{currentUser.nombre} {currentUser.apellido}</strong>
                         <div className="small text-muted">{currentUser.email}</div>
+                        <div className="small text-primary">Administrador</div>
                       </div>
                       
                       <button 
@@ -86,15 +74,33 @@ const CoachHeader: React.FC<CoachHeaderProps> = ({
                         👤 Ver mi perfil
                       </button>
 
-                      <button
-                        className="btn btn-primary w-100 mt-3"
-                        onClick={onAddPlayer}
+                      <hr className="my-2" />
+                      
+                      <button 
+                        className="btn btn-sm w-100 mb-1 text-start"
+                        onClick={onAddAdmin}
                       >
-                        ➕ Agregar Jugador
+                        ➕ Agregar Administrador
                       </button>
                       
                       <button 
                         className="btn btn-sm w-100 mb-1 text-start"
+                        onClick={onAddCoach}
+                      >
+                        👨‍🏫 Agregar Entrenador
+                      </button>
+                      
+                      <button 
+                        className="btn btn-sm w-100 mb-1 text-start"
+                        onClick={onAddSchool}
+                      >
+                        🏫 Agregar Escuela
+                      </button>
+                      
+                      <hr className="my-2" />
+                      
+                      <button 
+                        className="btn btn-sm w-100 mb-1 text-start text-danger"
                         onClick={onLogout}
                       >
                         🚪 Cerrar sesión
@@ -104,7 +110,9 @@ const CoachHeader: React.FC<CoachHeaderProps> = ({
                 )}
               </div>
               
-              <span className="user-name ms-2">{currentUser.nombre} {currentUser.apellido}</span>
+              <span className="user-name ms-2 d-none d-md-inline">
+                {currentUser.nombre} {currentUser.apellido}
+              </span>
             </div>
           </div>
         </div>
@@ -113,4 +121,4 @@ const CoachHeader: React.FC<CoachHeaderProps> = ({
   );
 };
 
-export default CoachHeader;
+export default AdminHeader;
