@@ -1,7 +1,6 @@
-import React from 'react';
-import FileUploader from '../../../shared/components/fileUpload';
+import React, { useState } from 'react';
+import FileUpload from '../../../shared/components/fileUpload';
 import { AddPlayerModalProps } from '../types/coachTypes';
-import { PlayerFiles } from '../../../../services/supabaseClient';
 
 const AddPlayerModal: React.FC<AddPlayerModalProps> = ({
   show,
@@ -15,6 +14,7 @@ const AddPlayerModal: React.FC<AddPlayerModalProps> = ({
   selectedDepartamentoId,
   currentUser,
   isUploading,
+  uploadProgress,
   fileErrors,
   onClose,
   onSubmit,
@@ -24,6 +24,54 @@ const AddPlayerModal: React.FC<AddPlayerModalProps> = ({
   onLoadCiudades
 }) => {
   if (!show) return null;
+
+  // Estado para almacenar los archivos seleccionados
+  const [selectedFiles, setSelectedFiles] = useState({
+    foto_perfil: null as File | null,
+    documento_pdf: null as File | null,
+    registro_civil: null as File | null
+  });
+
+  // Función para manejar la selección de archivos
+  const handleFileSelect = (fileType: keyof typeof selectedFiles, file: File | null) => {
+    console.log('📁 Archivo seleccionado:', {
+      tipo: fileType,
+      archivo: file ? file.name : 'null',
+      tamaño: file ? file.size + ' bytes' : 'N/A',
+      tipoMIME: file ? file.type : 'N/A'
+    });
+    
+    // Actualizar estado local con el archivo seleccionado
+    setSelectedFiles(prev => ({
+      ...prev,
+      [fileType]: file
+    }));
+    
+    // Llamar a la función original del padre
+    onFileSelect(fileType, file);
+  };
+
+  // Función para manejar el cambio de país
+  const handlePaisChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const { value } = e.target;
+    onInputChange(e);
+    
+    const selectedPais = paises.find(p => p.nombre === value);
+    if (selectedPais) {
+      await onLoadDepartamentos(selectedPais.id);
+    }
+  };
+
+  // Función para manejar el cambio de departamento
+  const handleDepartamentoChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const { value } = e.target;
+    onInputChange(e);
+    
+    const selectedDepto = departamentos.find(d => d.nombre === value);
+    if (selectedDepto) {
+      await onLoadCiudades(selectedDepto.id);
+    }
+  };
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -45,49 +93,65 @@ const AddPlayerModal: React.FC<AddPlayerModalProps> = ({
         </div>
 
         <div className="modal-body">
-          <form onSubmit={onSubmit}>
+          <form onSubmit={(e) => {
+            console.log('✅ Formulario enviado');
+            console.log('📋 Datos del jugador:', newPlayer);
+            onSubmit(e);
+          }}>
             {/* Sección de archivos */}
             <div className="files-section mb-4">
               <h5 className="mb-3">📁 ARCHIVOS DEL JUGADOR</h5>
               
               <div className="row">
                 <div className="col-md-4">
-                  <FileUploader
-                    type="photo"
+                  <FileUpload
+                    type="foto_perfil"
                     label="Foto de Perfil"
                     accept="image/jpeg,image/jpg,image/png,image/webp"
                     maxSize="5"
-                    onFileSelect={(file) => onFileSelect('foto_perfil', file)}
-                    currentFile={null}
+                    onFileSelect={handleFileSelect}
+                    currentFile={selectedFiles.foto_perfil}
                     error={fileErrors.foto_perfil}
                     required={true}
+                    isUploading={isUploading}
+                    uploadProgress={uploadProgress.foto_perfil}
                   />
                 </div>
                 
                 <div className="col-md-4">
-                  <FileUploader
-                    type="document"
+                  <FileUpload
+                    type="documento_pdf"
                     label="Documento de Identidad (PDF)"
                     accept="application/pdf"
                     maxSize="10"
-                    onFileSelect={(file) => onFileSelect('documento_pdf', file)}
-                    currentFile={null}
+                    onFileSelect={handleFileSelect}
+                    currentFile={selectedFiles.documento_pdf}
                     error={fileErrors.documento_pdf}
+                    isUploading={isUploading}
+                    uploadProgress={uploadProgress.documento_pdf}
                   />
                 </div>
                 
                 <div className="col-md-4">
-                  <FileUploader
-                    type="registro"
+                  <FileUpload
+                    type="registro_civil"
                     label="Registro Civil (PDF)"
                     accept="application/pdf"
                     maxSize="10"
-                    onFileSelect={(file) => onFileSelect('registro_civil', file)}
-                    currentFile={null}
+                    onFileSelect={handleFileSelect}
+                    currentFile={selectedFiles.registro_civil}
                     error={fileErrors.registro_civil}
+                    isUploading={isUploading}
+                    uploadProgress={uploadProgress.registro_civil}
                   />
                 </div>
               </div>
+
+              {fileErrors.general && (
+                <div className="alert alert-danger mt-2">
+                  Error general: {fileErrors.general}
+                </div>
+              )}
             </div>
 
             <hr />
@@ -185,7 +249,7 @@ const AddPlayerModal: React.FC<AddPlayerModalProps> = ({
                     id="pais"
                     name="pais"
                     value={newPlayer.pais || ''}
-                    onChange={onInputChange}
+                    onChange={handlePaisChange}
                     required
                   >
                     <option value="">Seleccione un país</option>
@@ -206,7 +270,7 @@ const AddPlayerModal: React.FC<AddPlayerModalProps> = ({
                     id="departamento"
                     name="departamento"
                     value={newPlayer.departamento || ''}
-                    onChange={onInputChange}
+                    onChange={handleDepartamentoChange}
                     disabled={!selectedPaisId}
                     required
                   >

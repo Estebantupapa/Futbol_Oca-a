@@ -1,4 +1,3 @@
-// supabaseClient.ts
 import { createClient } from '@supabase/supabase-js'
 import { Database } from './supabase.types'
 
@@ -88,6 +87,8 @@ export const uploadProfilePhoto = async (file: File, documento: string): Promise
     const fileName = generateUniqueFileName(file.name, documento, 'foto');
     const filePath = `fotos_perfil/${fileName}`;
     
+    console.log('🖼️ Subiendo foto de perfil:', filePath);
+    
     const { error } = await supabase.storage
       .from('jugadores')
       .upload(filePath, file, {
@@ -96,7 +97,7 @@ export const uploadProfilePhoto = async (file: File, documento: string): Promise
       });
     
     if (error) {
-      console.error('Error uploading profile photo:', error);
+      console.error('❌ Error uploading profile photo:', error);
       return { success: false, error: error.message };
     }
     
@@ -105,10 +106,11 @@ export const uploadProfilePhoto = async (file: File, documento: string): Promise
       .from('jugadores')
       .getPublicUrl(filePath);
     
+    console.log('✅ Foto subida exitosamente:', urlData.publicUrl);
     return { success: true, url: urlData.publicUrl };
     
   } catch (error: any) {
-    console.error('Error in uploadProfilePhoto:', error);
+    console.error('💥 Error in uploadProfilePhoto:', error);
     return { success: false, error: error.message };
   }
 };
@@ -129,6 +131,8 @@ export const uploadDocumentPDF = async (file: File, documento: string): Promise<
     const fileName = generateUniqueFileName(file.name, documento, 'documento');
     const filePath = `documentos/${fileName}`;
     
+    console.log('📄 Subiendo documento PDF:', filePath);
+    
     const { error } = await supabase.storage
       .from('jugadores')
       .upload(filePath, file, {
@@ -137,7 +141,7 @@ export const uploadDocumentPDF = async (file: File, documento: string): Promise<
       });
     
     if (error) {
-      console.error('Error uploading document PDF:', error);
+      console.error('❌ Error uploading document PDF:', error);
       return { success: false, error: error.message };
     }
     
@@ -146,10 +150,11 @@ export const uploadDocumentPDF = async (file: File, documento: string): Promise<
       .from('jugadores')
       .getPublicUrl(filePath);
     
+    console.log('✅ Documento PDF subido exitosamente:', urlData.publicUrl);
     return { success: true, url: urlData.publicUrl };
     
   } catch (error: any) {
-    console.error('Error in uploadDocumentPDF:', error);
+    console.error('💥 Error in uploadDocumentPDF:', error);
     return { success: false, error: error.message };
   }
 };
@@ -170,6 +175,8 @@ export const uploadRegistroCivilPDF = async (file: File, documento: string): Pro
     const fileName = generateUniqueFileName(file.name, documento, 'registro_civil');
     const filePath = `registros_civiles/${fileName}`;
     
+    console.log('📋 Subiendo registro civil PDF:', filePath);
+    
     const { error } = await supabase.storage
       .from('jugadores')
       .upload(filePath, file, {
@@ -178,7 +185,7 @@ export const uploadRegistroCivilPDF = async (file: File, documento: string): Pro
       });
     
     if (error) {
-      console.error('Error uploading registro civil PDF:', error);
+      console.error('❌ Error uploading registro civil PDF:', error);
       return { success: false, error: error.message };
     }
     
@@ -187,57 +194,84 @@ export const uploadRegistroCivilPDF = async (file: File, documento: string): Pro
       .from('jugadores')
       .getPublicUrl(filePath);
     
+    console.log('✅ Registro civil subido exitosamente:', urlData.publicUrl);
     return { success: true, url: urlData.publicUrl };
     
   } catch (error: any) {
-    console.error('Error in uploadRegistroCivilPDF:', error);
+    console.error('💥 Error in uploadRegistroCivilPDF:', error);
     return { success: false, error: error.message };
   }
 };
 
 // Función para subir múltiples archivos de un jugador
+// Función para subir múltiples archivos de un jugador
 export const uploadPlayerFiles = async (files: PlayerFiles, documento: string) => {
   const results = {
-    foto_perfil_url: null as string | null,
-    documento_pdf_url: null as string | null,
-    registro_civil_url: null as string | null,
+    foto_perfil_url: '', // Cambiado de null a string vacío
+    documento_pdf_url: '', // Cambiado de null a string vacío
+    registro_civil_url: '', // Cambiado de null a string vacío
     errors: [] as string[]
   };
   
   try {
-    // Subir foto de perfil
+    console.log('📤 Iniciando subida de archivos para documento:', documento);
+    console.log('📁 Archivos a subir:', {
+      foto_perfil: files.foto_perfil?.name || 'No seleccionada',
+      documento_pdf: files.documento_pdf?.name || 'No seleccionado', 
+      registro_civil: files.registro_civil?.name || 'No seleccionado'
+    });
+
+    // Subir foto de perfil (OBLIGATORIA)
     if (files.foto_perfil) {
+      console.log('🖼️ Subiendo foto de perfil...');
       const photoResult = await uploadProfilePhoto(files.foto_perfil, documento);
       if (photoResult.success) {
         results.foto_perfil_url = photoResult.url!;
+        console.log('✅ Foto de perfil subida:', results.foto_perfil_url);
       } else {
         results.errors.push(`Foto de perfil: ${photoResult.error}`);
+        console.error('❌ Error subiendo foto:', photoResult.error);
       }
+    } else {
+      results.errors.push('Foto de perfil: No se seleccionó ninguna foto');
+      console.error('❌ Foto de perfil no seleccionada');
     }
     
-    // Subir documento PDF
+    // Subir documento PDF (OPCIONAL)
     if (files.documento_pdf) {
+      console.log('📄 Subiendo documento PDF...');
       const docResult = await uploadDocumentPDF(files.documento_pdf, documento);
       if (docResult.success) {
         results.documento_pdf_url = docResult.url!;
+        console.log('✅ Documento PDF subido:', results.documento_pdf_url);
       } else {
         results.errors.push(`Documento PDF: ${docResult.error}`);
+        console.error('❌ Error subiendo documento:', docResult.error);
       }
+    } else {
+      console.log('ℹ️ Documento PDF no seleccionado (opcional)');
     }
-    
-    // Subir registro civil PDF
+
+    // Subir registro civil PDF (OPCIONAL)
     if (files.registro_civil) {
+      console.log('📋 Subiendo registro civil PDF...');
       const registroResult = await uploadRegistroCivilPDF(files.registro_civil, documento);
       if (registroResult.success) {
         results.registro_civil_url = registroResult.url!;
+        console.log('✅ Registro civil subido:', results.registro_civil_url);
       } else {
         results.errors.push(`Registro civil: ${registroResult.error}`);
+        console.error('❌ Error subiendo registro civil:', registroResult.error);
       }
+    } else {
+      console.log('ℹ️ Registro civil no seleccionado (opcional)');
     }
-    
+
+    console.log('📊 Resultados de subida:', results);
     return results;
     
   } catch (error: any) {
+    console.error('💥 Error general en uploadPlayerFiles:', error);
     results.errors.push(`Error general: ${error.message}`);
     return results;
   }
@@ -393,9 +427,23 @@ export const getEscuelas = async () => {
 // Función para crear un nuevo jugador
 export const createJugador = async (jugador: JugadorInsert) => {
   try {
+    console.log('👤 Creando jugador con datos:', {
+      ...jugador,
+      foto_perfil_url: jugador.foto_perfil_url || '',
+      documento_pdf_url: jugador.documento_pdf_url || '',
+      registro_civil_url: jugador.registro_civil_url || ''
+    });
+    
     const { data, error } = await supabase
       .from('jugadores')
-      .insert(jugador)
+      .insert({
+        ...jugador,
+        // Asegurar que las URLs sean strings vacíos en lugar de null
+        foto_perfil_url: jugador.foto_perfil_url || '',
+        documento_pdf_url: jugador.documento_pdf_url || '',
+        registro_civil_url: jugador.registro_civil_url || '',
+        activo: true
+      })
       .select(`
         *,
         categoria:categorias(*),
@@ -403,8 +451,16 @@ export const createJugador = async (jugador: JugadorInsert) => {
       `)
       .single();
     
-    return { data: data as Jugador | null, error };
-  } catch (catchError) {
+    if (error) {
+      console.error('❌ Error creando jugador:', error);
+      return { data: null, error };
+    }
+    
+    console.log('✅ Jugador creado exitosamente:', data);
+    return { data: data as Jugador | null, error: null };
+    
+  } catch (catchError: any) {
+    console.error('💥 Error inesperado creando jugador:', catchError);
     return { data: null, error: catchError };
   }
 };

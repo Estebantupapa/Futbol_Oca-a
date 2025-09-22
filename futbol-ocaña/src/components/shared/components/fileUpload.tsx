@@ -1,17 +1,20 @@
-//fileUpload.tsx
+// fileUpload.tsx
 import React, { useState, useRef } from 'react';
 import './FileUpload.css';
+import { PlayerFiles } from '../../../services/supabaseClient';
 
 interface FileUploadProps {
-  type: 'photo' | 'document' | 'registro';
+  type: keyof PlayerFiles;
   label: string;
   accept: string;
   maxSize: string;
-  onFileSelect: (file: File | null) => void;
+  onFileSelect: (fileType: keyof PlayerFiles, file: File | null) => void;
   currentFile?: File | null;
   currentUrl?: string | null;
   error?: string;
   required?: boolean;
+  isUploading?: boolean;
+  uploadProgress?: number;
 }
 
 const FileUpload: React.FC<FileUploadProps> = ({
@@ -23,23 +26,29 @@ const FileUpload: React.FC<FileUploadProps> = ({
   currentFile,
   currentUrl,
   error,
-  required = false
+  required = false,
+  isUploading = false,
+  uploadProgress = 0
 }) => {
   const [dragOver, setDragOver] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
+  const [isUploaded, setIsUploaded] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   React.useEffect(() => {
-    if (currentFile && type === 'photo') {
+    if (currentFile && type === 'foto_perfil') {
       const reader = new FileReader();
       reader.onload = (e) => {
         setPreview(e.target?.result as string);
       };
       reader.readAsDataURL(currentFile);
-    } else if (currentUrl && type === 'photo') {
+      setIsUploaded(true);
+    } else if (currentUrl && type === 'foto_perfil') {
       setPreview(currentUrl);
+      setIsUploaded(true);
     } else {
       setPreview(null);
+      setIsUploaded(false);
     }
   }, [currentFile, currentUrl, type]);
 
@@ -85,11 +94,13 @@ const FileUpload: React.FC<FileUploadProps> = ({
       return;
     }
 
-    onFileSelect(file);
+    onFileSelect(type, file);
+    setIsUploaded(true);
   };
 
   const handleRemoveFile = () => {
-    onFileSelect(null);
+    onFileSelect(type, null);
+    setIsUploaded(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -97,11 +108,11 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
   const getFileIcon = () => {
     switch (type) {
-      case 'photo':
+      case 'foto_perfil':
         return '📷';
-      case 'document':
+      case 'documento_pdf':
         return '📄';
-      case 'registro':
+      case 'registro_civil':
         return '📋';
       default:
         return '📁';
@@ -125,7 +136,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
       </label>
       
       <div
-        className={`file-upload-area ${dragOver ? 'drag-over' : ''} ${error ? 'error' : ''}`}
+        className={`file-upload-area ${dragOver ? 'drag-over' : ''} ${error ? 'error' : ''} ${isUploaded ? 'uploaded' : ''} ${isUploading ? 'uploading' : ''}`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
@@ -141,37 +152,43 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
         {currentFile || currentUrl ? (
           <div className="file-selected">
-            {type === 'photo' && preview ? (
+            {type === 'foto_perfil' && preview ? (
               <div className="photo-preview">
                 <img src={preview} alt="Vista previa" className="preview-image" />
                 <div className="file-info">
                   <span className="file-name">{getFileName()}</span>
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-danger remove-file"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRemoveFile();
-                    }}
-                  >
-                    ✕ Quitar
-                  </button>
+                  <div className="upload-status">
+                    <span className="upload-badge">✅ Subido</span>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-danger remove-file"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveFile();
+                      }}
+                    >
+                      ✕ Quitar
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : (
               <div className="file-info">
                 <div className="file-icon">{getFileIcon()}</div>
-                <span className="file-name">{getFileName()}</span>
+                <div className="file-details">
+                  <span className="file-name">{getFileName()}</span>
+                  <span className="upload-badge">✅ Subido</span>
+                </div>
                 <button
-                    type="button"
-                    className="btn btn-sm btn-danger remove-file"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRemoveFile();
-                    }}
-                  >
-                    ✕ Quitar
-                  </button>
+                  type="button"
+                  className="btn btn-sm btn-danger remove-file"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRemoveFile();
+                  }}
+                >
+                  ✕ Quitar
+                </button>
               </div>
             )}
           </div>
@@ -184,6 +201,15 @@ const FileUpload: React.FC<FileUploadProps> = ({
             <div className="upload-hint">
               Máximo {maxSize}MB
             </div>
+          </div>
+        )}
+
+        {isUploading && (
+          <div className="upload-progress">
+            <div 
+              className="progress-bar" 
+              style={{ width: `${uploadProgress}%` }}
+            ></div>
           </div>
         )}
       </div>

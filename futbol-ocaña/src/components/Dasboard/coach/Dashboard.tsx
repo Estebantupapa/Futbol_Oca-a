@@ -26,6 +26,7 @@ import CoachSidebar from './components/CoachSidebar';
 import PlayerModal from './components/PlayerModal';
 import AddPlayerModal from './components/AddPlayerModal';
 import ProfileModal from './components/ProfileModal';
+import DocumentViewer from '../../shared/components/DocumentViewer';
 import { useFileUpload } from './hooks/useFileUpload';
 
 interface DashboardProps {
@@ -60,9 +61,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
   const [editSelectedPaisId, setEditSelectedPaisId] = useState<string>('');
   const [editSelectedDepartamentoId, setEditSelectedDepartamentoId] = useState<string>('');
   
-  // Nuevo estado para controlar si hay documentos abiertos
-  const [documentOpened, setDocumentOpened] = useState(false);
-  
   // Estados para el menú hamburguesa
   const [showHamburgerMenu, setShowHamburgerMenu] = useState(false);
   const hamburgerMenuRef = useRef<HTMLDivElement>(null);
@@ -78,21 +76,32 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+
+  // Estado para búsqueda automática
+  const [documentOpened, setDocumentOpened] = useState<boolean>(false);
   const [searchResult, setSearchResult] = useState<{
     found: boolean;
     player?: Jugador;
     message: string;
   } | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
   
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   // Hook para manejo de archivos
-  const { files, fileErrors, handleFileSelect, uploadFiles, resetFiles } = useFileUpload();
+  const { 
+    files, 
+    fileErrors, 
+    handleFileSelect, 
+    uploadFiles, 
+    resetFiles, 
+    documentViewer, 
+    openDocument, 
+    closeDocument,
+    uploadProgress
+  } = useFileUpload();
 
   // Estado inicial del nuevo jugador
   const initialPlayerState = useMemo(() => ({
@@ -189,6 +198,48 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
     initializeData();
   }, [currentUser.rol, currentUser.escuela_id, reloadPlayers]);
 
+  // BÚSQUEDA AUTOMÁTICA POR DOCUMENTO
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      if (selectedDocument.trim().length > 0) {
+        handleAutoSearch();
+      } else {
+        setSearchResult(null);
+      }
+    }, 500);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [selectedDocument]);
+
+  const handleAutoSearch = useCallback(() => {
+    if (!selectedDocument.trim()) {
+      setSearchResult(null);
+      return;
+    }
+
+    setIsSearching(true);
+    
+    // Buscar el jugador por documento
+    const player = players.find(p => p.documento === selectedDocument.trim());
+    
+    if (player) {
+      setSearchResult({
+        found: true,
+        player: player,
+        message: 'Jugador encontrado'
+      });
+    } else {
+      setSearchResult({
+        found: false,
+        message: 'El documento no está registrado en el sistema'
+      });
+    }
+    
+    setIsSearching(false);
+  }, [selectedDocument, players]);
+
   // Filtrar jugadores
   useEffect(() => {
     const filtered = players.filter(player => {
@@ -243,10 +294,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
     setShowCategoryDropdown(!showCategoryDropdown);
   }, [showCategoryDropdown]);
 
-  const handlePlayerClick = useCallback((player: Jugador) => {
+  /*const handlePlayerClick = useCallback((player: Jugador) => {
     setSelectedPlayer(player);
     setShowPlayerModal(true);
-  }, []);
+  }, []);*/
 
   // Función para cargar el perfil del usuario
   const loadUserProfile = useCallback(async () => {
@@ -371,7 +422,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
     setError(null);
   }, [initialPlayerState, resetFiles]);
 
-  // Función para agregar jugador con archivos
+  // FUNCIÓN PARA AGREGAR JUGADOR CON ARCHIVOS
   const handleAddPlayerSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -401,7 +452,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
         return;
       }
 
-      // Crear datos del jugador con URLs de archivos
       const playerData = {
         documento: newPlayer.documento,
         nombre: newPlayer.nombre,
@@ -414,9 +464,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
         escuela_id: newPlayer.escuela_id,
         eps: newPlayer.eps,
         tipo_eps: newPlayer.tipo_eps || 'Subsidiado',
-        foto_perfil_url: uploadResults.foto_perfil_url,
-        documento_pdf_url: uploadResults.documento_pdf_url,
-        registro_civil_url: uploadResults.registro_civil_url
+        foto_perfil_url: uploadResults.foto_perfil,
+        documento_pdf_url: uploadResults.documento_pdf,
+        registro_civil_url: uploadResults.registro_civil
       };
 
       const result = await createJugador(playerData);
@@ -597,63 +647,577 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
     }
   }, [selectedPlayer, reloadPlayers]);
 
-  // Función para manejar la apertura de documentos
   const handleDocumentOpen = useCallback((url: string, filename: string) => {
     setDocumentOpened(true);
+    openDocument(url, filename);
+  }, [openDocument, setDocumentOpened]);
+
+  // FUNCIÓN DE IMPRESIÓN MEJORADA
+const handlePrint = useCallback(async () => {
+  if (!selectedPlayer || isProcessing) return;
+
+  try {
+    setIsProcessing(true);
+    setProcessingMessage('Preparando impresión...');
     
-    const newWindow = window.open('', '_blank');
-    
-    if (newWindow) {
-      newWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <title>${filename}</title>
-            <style>
-              body { margin: 0; padding: 20px; background: #f5f5f5; }
-              .container { max-width: 100%; height: 100vh; }
-              iframe { width: 100%; height: 100%; border: none; }
-              .header { padding: 10px; background: #fff; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; }
-              .btn { padding: 5px 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: button; }
-            </style>
-          </head>
-          <body>
+    // Crear el contenido HTML para impresión con mejor manejo de imágenes
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Información del Jugador - ${selectedPlayer.nombre} ${selectedPlayer.apellido}</title>
+          <style>
+            body { 
+              font-family: Arial, sans-serif; 
+              margin: 0; 
+              padding: 20px; 
+              background: white; 
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            .print-container { 
+              max-width: 800px; 
+              margin: 0 auto; 
+              background: white; 
+            }
+            .header { 
+              text-align: center; 
+              margin-bottom: 30px; 
+              border-bottom: 2px solid #2c3e50; 
+              padding-bottom: 20px; 
+            }
+            .header h1 { 
+              color: #2c3e50; 
+              margin: 0 0 10px 0; 
+              font-size: 24px; 
+            }
+            .header h2 { 
+              color: #34495e; 
+              margin: 0; 
+              font-size: 18px; 
+            }
+            .player-section { 
+              display: flex; 
+              gap: 30px; 
+              margin-bottom: 30px; 
+              align-items: flex-start;
+            }
+            .photo-section { 
+              flex: 0 0 200px; 
+            }
+            .player-photo { 
+              width: 200px; 
+              height: 200px; 
+              object-fit: cover; 
+              border-radius: 10px; 
+              border: 2px solid #ddd;
+              display: block;
+            }
+            .photo-placeholder { 
+              width: 200px; 
+              height: 200px; 
+              background: #f0f0f0; 
+              border-radius: 10px; 
+              display: flex; 
+              align-items: center; 
+              justify-content: center; 
+              font-size: 60px; 
+              color: #999; 
+              border: 2px solid #ddd;
+            }
+            .info-section { 
+              flex: 1; 
+            }
+            .player-name { 
+              color: #2c3e50; 
+              margin-bottom: 20px; 
+              font-size: 22px; 
+              font-weight: bold; 
+            }
+            .info-row { 
+              margin-bottom: 8px; 
+              display: flex;
+            }
+            .info-label { 
+              font-weight: bold; 
+              width: 140px; 
+              flex-shrink: 0;
+            }
+            .info-value {
+              flex: 1;
+            }
+            .section { 
+              border-top: 2px solid #eee; 
+              padding-top: 20px; 
+              margin-top: 20px; 
+            }
+            .section-title { 
+              color: #2c3e50; 
+              margin-bottom: 15px; 
+              font-size: 18px; 
+              font-weight: bold; 
+            }
+            .grid { 
+              display: grid; 
+              grid-template-columns: 1fr 1fr 1fr; 
+              gap: 20px; 
+              margin-bottom: 20px; 
+            }
+            .grid-item { 
+              padding: 10px; 
+              background: #f8f9fa; 
+              border-radius: 5px; 
+              border: 1px solid #dee2e6; 
+            }
+            .grid-label { 
+              font-weight: bold; 
+              margin-bottom: 5px; 
+              color: #495057; 
+            }
+            .footer { 
+              margin-top: 40px; 
+              text-align: center; 
+              color: #7f8c8d; 
+              font-size: 12px; 
+              border-top: 1px solid #eee; 
+              padding-top: 20px; 
+            }
+            @media print {
+              body { 
+                margin: 0; 
+                padding: 15px;
+              }
+              @page { 
+                margin: 1cm; 
+                size: A4; 
+              }
+              .print-container { 
+                max-width: none; 
+                margin: 0;
+              }
+              .player-section { 
+                page-break-inside: avoid; 
+              }
+              .section { 
+                page-break-inside: avoid; 
+              }
+              .player-photo {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+              }
+            }
+          </style>
+          <script>
+            // Función para manejar errores de imagen
+            function handleImageError(img) {
+              console.log('Error cargando imagen, mostrando placeholder');
+              img.style.display = 'none';
+              var placeholder = img.nextElementSibling;
+              if (placeholder && placeholder.classList.contains('photo-placeholder')) {
+                placeholder.style.display = 'flex';
+              }
+            }
+            
+            // Precargar imagen antes de imprimir
+            window.onload = function() {
+              var img = document.getElementById('player-photo');
+              if (img && img.complete && img.naturalHeight === 0) {
+                handleImageError(img);
+              }
+            };
+          </script>
+        </head>
+        <body>
+          <div class="print-container">
             <div class="header">
-              <h4>${filename}</h4>
-              <button class="btn" onclick="window.close()">Cerrar</button>
+              <h1>Corporación de Futbol Ocañero</h1>
+              <h2>Información del Jugador</h2>
             </div>
-            <div class="container">
-              <iframe src="${url}" title="${filename}"></iframe>
+            
+            <div class="player-section">
+              <div class="photo-section">
+                ${selectedPlayer.foto_perfil_url ? 
+                  `<img 
+                    id="player-photo"
+                    src="${selectedPlayer.foto_perfil_url}?t=${Date.now()}" 
+                    alt="Foto de ${selectedPlayer.nombre} ${selectedPlayer.apellido}" 
+                    class="player-photo" 
+                    onerror="handleImageError(this)"
+                    crossorigin="anonymous"
+                  >
+                   <div class="photo-placeholder" style="display:none;">👤</div>` :
+                  `<div class="photo-placeholder">👤</div>`
+                }
+              </div>
+              <div class="info-section">
+                <div class="player-name">${selectedPlayer.nombre} ${selectedPlayer.apellido}</div>
+                <div class="info-row">
+                  <span class="info-label">Documento:</span>
+                  <span class="info-value">${selectedPlayer.documento}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Edad:</span>
+                  <span class="info-value">${calculateAge(selectedPlayer.fecha_nacimiento)} años</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Fecha de Nacimiento:</span>
+                  <span class="info-value">${formatDate(selectedPlayer.fecha_nacimiento)}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Categoría:</span>
+                  <span class="info-value">${selectedPlayer.categoria?.nombre || 'Sin categoría'}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Escuela:</span>
+                  <span class="info-value">${selectedPlayer.escuela?.nombre || 'Sin escuela'}</span>
+                </div>
+              </div>
             </div>
-          </body>
-        </html>
-      `);
-      newWindow.document.close();
-      newWindow.focus();
-    } else {
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      link.target = '_blank';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+            
+            <div class="section">
+              <div class="section-title">Información de Ubicación</div>
+              <div class="grid">
+                <div class="grid-item">
+                  <div class="grid-label">País</div>
+                  ${selectedPlayer.pais || 'No especificado'}
+                </div>
+                <div class="grid-item">
+                  <div class="grid-label">Departamento</div>
+                  ${selectedPlayer.departamento || 'No especificado'}
+                </div>
+                <div class="grid-item">
+                  <div class="grid-label">Ciudad</div>
+                  ${selectedPlayer.ciudad || 'No especificado'}
+                </div>
+              </div>
+            </div>
+            
+            <div class="section">
+              <div class="section-title">Información Médica</div>
+              <div class="grid" style="grid-template-columns: 1fr 1fr;">
+                <div class="grid-item">
+                  <div class="grid-label">EPS</div>
+                  ${selectedPlayer.eps || 'No especificado'}
+                </div>
+                <div class="grid-item">
+                  <div class="grid-label">Tipo de EPS</div>
+                  ${selectedPlayer.tipo_eps || 'No especificado'}
+                </div>
+              </div>
+            </div>
+            
+            <div class="footer">
+              <p>Documento generado el ${new Date().toLocaleDateString('es-CO')} a las ${new Date().toLocaleTimeString('es-CO')}</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank', 'width=900,height=700');
+    
+    if (!printWindow) {
+      throw new Error('No se pudo abrir la ventana de impresión');
     }
+
+    printWindow.document.open();
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    
+    // Esperar a que la imagen se cargue antes de imprimir
+    await new Promise<void>((resolve) => {
+      if (printWindow.document.readyState === 'complete') {
+        resolve();
+      } else {
+        printWindow.addEventListener('load', () => resolve());
+      }
+    });
+
+    // Esperar adicionalmente para que las imágenes se carguen
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    printWindow.focus();
+    
+    // Usar un enfoque más robusto para la impresión
+    const printWithFallback = () => {
+      try {
+        printWindow.print();
+        
+        // Cerrar la ventana después de un tiempo
+        setTimeout(() => {
+          try {
+            if (!printWindow.closed) {
+              printWindow.close();
+            }
+          } catch (closeError) {
+            console.log('No se pudo cerrar la ventana automáticamente');
+          }
+        }, 1000);
+        
+      } catch (printError: any) {
+        console.error('Error al imprimir:', printError);
+        
+        // Fallback: Descargar como PDF si la impresión directa falla
+        try {
+          const printStyles = `
+            <style>
+              @media print {
+                body { margin: 0; padding: 15mm; }
+                .print-container { max-width: 100%; }
+              }
+            </style>
+          `;
+          
+          const pdfContent = printContent.replace('</head>', printStyles + '</head>');
+          const blob = new Blob([pdfContent], { type: 'text/html' });
+          const url = URL.createObjectURL(blob);
+          
+          const downloadLink = document.createElement('a');
+          downloadLink.href = url;
+          downloadLink.download = `Jugador_${selectedPlayer.nombre}_${selectedPlayer.apellido}.html`;
+          downloadLink.click();
+          
+          URL.revokeObjectURL(url);
+          
+          setError('Se descargó el documento como archivo HTML para imprimir');
+          
+        } catch (fallbackError) {
+          setError('Error al imprimir y al intentar descargar el documento');
+        }
+        
+        try {
+          printWindow.close();
+        } catch (e) {
+          console.log('No se pudo cerrar la ventana de impresión');
+        }
+      }
+    };
+
+    // Esperar un poco más para asegurar que todo esté cargado
+    setTimeout(printWithFallback, 500);
+    
+  } catch (error: any) {
+    console.error('Error en impresión:', error);
+    setError(`Error al preparar la impresión: ${error?.message || 'Error desconocido'}`);
+  } finally {
+    setIsProcessing(false);
+    setProcessingMessage('');
+  }
+}, [selectedPlayer, isProcessing]);
+
+  // FUNCIÓN DE DESCARGA DE REGISTRO
+  const handleDownloadRegister = useCallback(async () => {
+    if (!selectedPlayer || isProcessing) return;
+
+    try {
+      setIsProcessing(true);
+      setProcessingMessage('Preparando descarga...');
+      
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      let downloadUrl = '';
+      let filename = '';
+
+      if (selectedPlayer.registro_civil_url) {
+        downloadUrl = selectedPlayer.registro_civil_url;
+        filename = `Registro_Civil_${selectedPlayer.nombre}_${selectedPlayer.apellido}_${selectedPlayer.documento}.pdf`;
+      } else if (selectedPlayer.documento_pdf_url) {
+        downloadUrl = selectedPlayer.documento_pdf_url;
+        filename = `Documento_${selectedPlayer.nombre}_${selectedPlayer.apellido}_${selectedPlayer.documento}.pdf`;
+      }
+
+      if (downloadUrl) {
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = filename;
+        link.target = '_blank';
+        link.style.display = 'none';
+        
+        document.body.appendChild(link);
+        
+        setTimeout(() => {
+          link.click();
+          setTimeout(() => {
+            document.body.removeChild(link);
+            setIsProcessing(false);
+            setProcessingMessage('');
+          }, 100);
+        }, 100);
+      } else {
+        setError('No hay documentos disponibles para descargar');
+        setIsProcessing(false);
+        setProcessingMessage('');
+      }
+      
+    } catch (error: any) {
+      console.error('Error en descarga:', error);
+      setError('Error al preparar la descarga');
+      setIsProcessing(false);
+      setProcessingMessage('');
+    }
+  }, [selectedPlayer, isProcessing]);
+
+  // FUNCIÓN PDF PARA GENERAR IDENTIFICACIÓN
+const handleDownloadID = useCallback(async () => {
+  if (!selectedPlayer || isProcessing || !selectedPlayer.foto_perfil_url) return;
+
+  try {
+    setIsProcessing(true);
+    setProcessingMessage('Generando PDF...');
+    
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Importar jsPDF correctamente
+    const jsPDFModule = await import('jspdf');
+    const jsPDF = jsPDFModule.default;
+    
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+
+    pdf.setFont('helvetica');
+    
+    // Header
+    pdf.setFillColor(52, 152, 219);
+    pdf.rect(0, 0, 210, 25, 'F');
+    
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(18);
+    pdf.text('CORPORACIÓN DE FUTBOL OCEAÑERO', 105, 12, { align: 'center' });
+    pdf.setFontSize(12);
+    pdf.text('IDENTIFICACIÓN DE JUGADOR', 105, 20, { align: 'center' });
+
+    pdf.setTextColor(0, 0, 0);
+    let yPosition = 40;
+    
+    // Información del jugador
+    pdf.setFontSize(16);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(`${selectedPlayer.nombre} ${selectedPlayer.apellido}`, 20, yPosition);
+    
+    yPosition += 10;
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(`Documento: ${selectedPlayer.documento}`, 20, yPosition);
+    
+    yPosition += 8;
+    pdf.text(`Edad: ${calculateAge(selectedPlayer.fecha_nacimiento)} años`, 20, yPosition);
+    
+    yPosition += 8;
+    pdf.text(`Fecha de Nacimiento: ${formatDate(selectedPlayer.fecha_nacimiento)}`, 20, yPosition);
+    
+    yPosition += 15;
+    
+    // Ubicación
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('UBICACIÓN:', 20, yPosition);
+    yPosition += 8;
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(`País: ${selectedPlayer.pais}`, 20, yPosition);
+    yPosition += 6;
+    pdf.text(`Departamento: ${selectedPlayer.departamento}`, 20, yPosition);
+    yPosition += 6;
+    pdf.text(`Ciudad: ${selectedPlayer.ciudad}`, 20, yPosition);
+    
+    yPosition += 15;
+    
+    // Información deportiva
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('INFORMACIÓN DEPORTIVA:', 20, yPosition);
+    yPosition += 8;
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(`Categoría: ${selectedPlayer.categoria?.nombre || 'Sin categoría'}`, 20, yPosition);
+    yPosition += 6;
+    pdf.text(`Escuela: ${selectedPlayer.escuela?.nombre || 'Sin escuela'}`, 20, yPosition);
+    
+    yPosition += 15;
+    
+    // Información médica
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('INFORMACIÓN MÉDICA:', 20, yPosition);
+    yPosition += 8;
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(`EPS: ${selectedPlayer.eps}`, 20, yPosition);
+    yPosition += 6;
+    pdf.text(`Tipo de EPS: ${selectedPlayer.tipo_eps}`, 20, yPosition);
+
+    // Imagen
+    if (selectedPlayer.foto_perfil_url) {
+      try {
+        setProcessingMessage('Procesando imagen...');
+        
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        
+        await new Promise<void>((resolve) => {
+          const timeout = setTimeout(() => resolve(), 3000);
+          
+          img.onload = () => {
+            clearTimeout(timeout);
+            try {
+              const canvas = document.createElement('canvas');
+              const ctx = canvas.getContext('2d');
+              
+              const maxWidth = 40;
+              const maxHeight = 50;
+              
+              canvas.width = maxWidth;
+              canvas.height = maxHeight;
+              
+              if (ctx) {
+                ctx.drawImage(img, 0, 0, maxWidth, maxHeight);
+                const imgData = canvas.toDataURL('image/jpeg', 0.8);
+                pdf.addImage(imgData, 'JPEG', 150, 35, maxWidth, maxHeight);
+              }
+              resolve();
+            } catch (err) {
+              resolve();
+            }
+          };
+          
+          img.onerror = () => {
+            clearTimeout(timeout);
+            resolve();
+          };
+          
+          img.src = selectedPlayer.foto_perfil_url!;
+        });
+      } catch (err) {
+        console.warn('Error cargando imagen:', err);
+      }
+    }
+
+    // Footer
+    const now = new Date();
+    pdf.setFontSize(8);
+    pdf.setTextColor(128, 128, 128);
+    pdf.text(`Generado el ${now.toLocaleDateString('es-CO')} a las ${now.toLocaleTimeString('es-CO')}`, 105, 280, { align: 'center' });
+
+    setProcessingMessage('Descargando archivo...');
     
     setTimeout(() => {
-      setDocumentOpened(false);
-    }, 500);
-  }, []);
+      const filename = `ID_${selectedPlayer.nombre}_${selectedPlayer.apellido}_${selectedPlayer.documento}.pdf`;
+      pdf.save(filename);
+      setIsProcessing(false);
+      setProcessingMessage('');
+    }, 100);
+    
+  } catch (error: any) {
+    console.error('Error generando PDF:', error);
+    setError('Error generando el PDF de identificación');
+    setIsProcessing(false);
+    setProcessingMessage('');
+  }
+}, [selectedPlayer, isProcessing]);
 
   // Función para cerrar modal del jugador
   const closePlayerModal = useCallback(async () => {
     if (isProcessing) {
       const confirmed = window.confirm('Hay una operación en progreso. ¿Estás seguro de que deseas cerrar?');
       if (!confirmed) return;
-    }
-    
-    if (documentOpened) {
-      setDocumentOpened(false);
     }
     
     setIsProcessing(false);
@@ -668,13 +1232,31 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
     setEditDepartamentos([]);
     setEditCiudades([]);
     setError(null);
-  }, [isProcessing, documentOpened]);
+  }, [isProcessing]);
 
   // Función para cerrar modal de agregar jugador
   const closeAddModal = useCallback(() => {
     setShowAddModal(false);
     resetPlayerForm();
   }, [resetPlayerForm]);
+
+  // Funciones de utilidad
+  const formatDate = useCallback((dateString: string) => {
+    return new Date(dateString).toLocaleDateString('es-CO');
+  }, []);
+
+  const calculateAge = useCallback((birthDate: string) => {
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    
+    return age;
+  }, []);
 
   // Cerrar dropdown al hacer clic fuera
   useEffect(() => {
@@ -689,7 +1271,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
         setShowCategoryDropdown(false);
       }
       
-      // Cerrar menú hamburguesa si se hace clic fuera
       if (hamburgerMenu && showHamburgerMenu && !hamburgerMenu.contains(event.target as Node)) {
         setShowHamburgerMenu(false);
       }
@@ -700,6 +1281,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showHamburgerMenu]);
+
+  // Estados para manejo de errores y carga
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Loading state
   if (loading) {
@@ -787,10 +1372,22 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
                         className="form-control document-input"
                         id="documento"
                         value={selectedDocument}
-                        onChange={(e) => setSelectedDocument(e.target.value)}
+                        onChange={(e) => {
+                          setSelectedDocument(e.target.value);
+                          setSearchResult(null);
+                        }}
                         placeholder="Ingrese número de documento"
                       />
                     </div>
+                    
+                    {selectedDocument && isSearching && (
+                      <div className="searching-indicator mt-2">
+                        <small className="text-muted">
+                          <span className="spinner-border spinner-border-sm me-2"></span>
+                          Buscando...
+                        </small>
+                      </div>
+                    )}
                   </div>
 
                   {searchResult && (
@@ -799,10 +1396,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
                         <div className="alert alert-success py-2 px-3">
                           <h6 className="mb-1">✅ Jugador encontrado</h6>
                           <p className="mb-1"><strong>Nombre:</strong> {searchResult.player?.nombre} {searchResult.player?.apellido}</p>
-                          <p className="mb-1"><strong>Escuela:</strong> {searchResult.player?.escuela?.nombre}</p>
-                          <p className="mb-0"><strong>Categoría:</strong> {searchResult.player?.categoria?.nombre}</p>
+                          <p className="mb-1"><strong>Edad:</strong> {searchResult.player && calculateAge(searchResult.player.fecha_nacimiento)} años</p>
+                          <p className="mb-1"><strong>Escuela:</strong> {searchResult.player && escuelas.find(esc => esc.id === searchResult.player!.escuela_id)?.nombre || 'Sin escuela'}</p>
+                          <p className="mb-2"><strong>Categoría:</strong> {searchResult.player && categorias.find(cat => cat.id === searchResult.player!.categoria_id)?.nombre || 'Sin categoría'}</p>
                           <button 
-                            className="btn btn-sm btn-outline-primary mt-2"
+                            className="btn btn-sm btn-outline-primary"
                             onClick={() => searchResult.player && handlePlayerClickDetailed(searchResult.player)}
                           >
                             Ver detalles
@@ -810,7 +1408,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
                         </div>
                       ) : (
                         <div className="alert alert-warning py-2 px-3">
-                          <p className="mb-0">❌ {searchResult.message}</p>
+                          <h6 className="mb-1">❌ Documento no registrado</h6>
+                          <p className="mb-2">{searchResult.message}</p>
+                          <button 
+                            className="btn btn-sm btn-outline-secondary"
+                            onClick={() => setShowAddModal(true)}
+                          >
+                            Registrar nuevo jugador
+                          </button>
                         </div>
                       )}
                     </div>
@@ -822,12 +1427,23 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
         </div>
       </div>
 
+      {/* Document Viewer Modal */}
+      {documentViewer.isOpen && (
+        <DocumentViewer
+          url={documentViewer.url}
+          filename={documentViewer.filename}
+          onClose={closeDocument}
+        />
+      )}
+
+      {/* Profile Modal */}
       <ProfileModal
         show={showProfileModal}
         userProfile={userProfile}
         onClose={() => setShowProfileModal(false)}
       />
 
+      {/* Add Player Modal */}
       <AddPlayerModal
         show={showAddModal}
         newPlayer={newPlayer}
@@ -840,6 +1456,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
         selectedDepartamentoId={selectedDepartamentoId}
         currentUser={currentUser}
         isUploading={isProcessing}
+        uploadProgress={uploadProgress}
         fileErrors={fileErrors}
         onClose={closeAddModal}
         onSubmit={handleAddPlayerSubmit}
@@ -849,6 +1466,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
         onLoadCiudades={loadCiudadesByDepartamento}
       />
 
+      {/* Player Modal */}
       {showPlayerModal && selectedPlayer && (
         <PlayerModal
           player={selectedPlayer}
@@ -872,9 +1490,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
           onCancelEdit={handleCancelEdit}
           onDelete={handleDeletePlayer}
           onInputChange={handleEditInputChange}
-          onPrint={() => {/* TODO: Implementar print */}}
-          onDownloadID={() => {/* TODO: Implementar download ID */}}
-          onDownloadRegister={() => {/* TODO: Implementar download register */}}
+          onPrint={handlePrint}
+          onDownloadID={handleDownloadID}
+          onDownloadRegister={handleDownloadRegister}
           onDocumentOpen={handleDocumentOpen}
           onLoadEditDepartamentos={loadEditDepartamentosByPais}
           onLoadEditCiudades={loadEditCiudadesByDepartamento}
