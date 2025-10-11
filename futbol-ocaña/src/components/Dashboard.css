@@ -1394,3 +1394,397 @@
     overflow-x: hidden;
   }
 }
+
+/* Estilos para las tarjetas de estadísticas del admin */
+.admin-stats-section {
+  padding: 2rem;
+}
+
+.stat-card {
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  height: 100%;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+}
+
+.stat-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.stat-number {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+/* Responsive para estadísticas */
+@media (max-width: 768px) {
+  .admin-stats-section {
+    padding: 1rem;
+  }
+  
+  .stat-card {
+    padding: 1rem;
+  }
+  
+  .stat-icon {
+    font-size: 2rem;
+  }
+  
+  .stat-number {
+    font-size: 1.5rem;
+  }
+}
+
+/* Estilos para las tarjetas de estadísticas del admin */
+.admin-stats-section {
+  padding: 2rem;
+}
+
+.stat-card {
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  height: 100%;
+  border: none;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+}
+
+.stat-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.stat-number {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  opacity: 0.9;
+  font-weight: 500;
+}
+
+/* Responsive para estadísticas */
+@media (max-width: 768px) {
+  .admin-stats-section {
+    padding: 1rem;
+  }
+  
+  .stat-card {
+    padding: 1rem;
+  }
+  
+  .stat-icon {
+    font-size: 2rem;
+  }
+  
+  .stat-number {
+    font-size: 1.5rem;
+  }
+}
+
+/* Mejoras para el modal del admin */
+.admin-player-modal .readonly-input {
+  background: #f8f9fa !important;
+  border: 1px solid #dee2e6;
+  color: #495057;
+  padding: 0.75rem;
+  border-radius: 6px;
+  min-height: 45px;
+  display: flex;
+  align-items: center;
+}
+
+.dark-theme .admin-player-modal .readonly-input {
+  background: #404040 !important;
+  border: 1px solid #555;
+  color: #e0e0e0;
+}
+
+/* Estilos específicos para AdminPlayerItem */
+.player-actions .badge {
+  font-size: 0.7rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.player-school {
+  margin-top: 0.25rem;
+}
+
+/* Quitar cualquier hover que sugiera edición */
+.admin-player-item .player-item:hover {
+  background: #e9ecef;
+  transform: translateX(4px);
+}
+
+.dark-theme .admin-player-item .player-item:hover {
+  background: #4a4a4a;
+}
+
+/* Estilos para indicar que es solo lectura */
+.readonly-badge {
+  background: #6c757d;
+  color: white;
+  font-size: 0.7rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+}
+
+/* Estilos para las tarjetas de estadísticas del admin */
+.admin-stats-section {
+  padding: 2rem;
+}
+
+.stat-card {
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  height: 100%;
+  border: none;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+}
+
+.stat-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.stat-number {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  opacity: 0.9;
+  font-weight: 500;
+}
+
+/* Estilos específicos para AdminPlayerItem */
+.player-actions .badge {
+  font-size: 0.7rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.player-school {
+  margin-top: 0.25rem;
+}
+
+/* Quitar cualquier hover que sugiera edición */
+.admin-player-item .player-item:hover {
+  background: #e9ecef;
+  transform: translateX(4px);
+}
+
+.dark-theme .admin-player-item .player-item:hover {
+  background: #4a4a4a;
+}
+
+/* Estilos para indicar que es solo lectura */
+.readonly-badge {
+  background: #6c757d;
+  color: white;
+  font-size: 0.7rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+}
+
+/* Responsive para estadísticas */
+@media (max-width: 768px) {
+  .admin-stats-section {
+    padding: 1rem;
+  }
+  
+  .stat-card {
+    padding: 1rem;
+  }
+  
+  .stat-icon {
+    font-size: 2rem;
+  }
+  
+  .stat-number {
+    font-size: 1.5rem;
+  }
+}
+
+/* Mejoras para el modal del admin */
+.admin-player-modal .readonly-input {
+  background: #f8f9fa !important;
+  border: 1px solid #dee2e6;
+  color: #495057;
+  padding: 0.75rem;
+  border-radius: 6px;
+  min-height: 45px;
+  display: flex;
+  align-items: center;
+}
+
+.dark-theme .admin-player-modal .readonly-input {
+  background: #404040 !important;
+  border: 1px solid #555;
+  color: #e0e0e0;
+}
+
+/* Estilos para las tarjetas de estadísticas del admin */
+.admin-stats-section {
+  padding: 2rem;
+}
+
+.stat-card {
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  height: 100%;
+  border: none;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+}
+
+.stat-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.stat-number {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  opacity: 0.9;
+  font-weight: 500;
+}
+
+/* Estilos específicos para AdminPlayerItem */
+.player-actions .badge {
+  font-size: 0.7rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.player-school {
+  margin-top: 0.25rem;
+}
+
+/* Quitar cualquier hover que sugiera edición */
+.admin-player-item .player-item:hover {
+  background: #e9ecef;
+  transform: translateX(4px);
+}
+
+.dark-theme .admin-player-item .player-item:hover {
+  background: #4a4a4a;
+}
+
+/* Estilos para indicar que es solo lectura */
+.readonly-badge {
+  background: #6c757d;
+  color: white;
+  font-size: 0.7rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+}
+
+/* Información adicional del admin */
+.admin-info-section .card {
+  border: none;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  margin-bottom: 1rem;
+}
+
+.admin-info-section .card-body {
+  padding: 1.5rem;
+}
+
+.admin-info-section ul li,
+.admin-info-section ol li {
+  margin-bottom: 0.5rem;
+  padding-left: 0.5rem;
+}
+
+/* Responsive para estadísticas */
+@media (max-width: 768px) {
+  .admin-stats-section {
+    padding: 1rem;
+  }
+  
+  .stat-card {
+    padding: 1rem;
+  }
+  
+  .stat-icon {
+    font-size: 2rem;
+  }
+  
+  .stat-number {
+    font-size: 1.5rem;
+  }
+}
+
+/* Mejoras para el modal del admin */
+.admin-player-modal .readonly-input {
+  background: #f8f9fa !important;
+  border: 1px solid #dee2e6;
+  color: #495057;
+  padding: 0.75rem;
+  border-radius: 6px;
+  min-height: 45px;
+  display: flex;
+  align-items: center;
+}
+
+.dark-theme .admin-player-modal .readonly-input {
+  background: #404040 !important;
+  border: 1px solid #555;
+  color: #e0e0e0;
+}
+
+/* Indicador de solo lectura en admin */
+.admin-readonly-indicator {
+  background: #e9ecef;
+  border-left: 4px solid #6c757d;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  border-radius: 4px;
+}
+
+.dark-theme .admin-readonly-indicator {
+  background: #404040;
+  border-left-color: #adb5bd;
+}

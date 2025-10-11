@@ -653,360 +653,360 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
   }, [openDocument, setDocumentOpened]);
 
   // FUNCIÓN DE IMPRESIÓN MEJORADA
-const handlePrint = useCallback(async () => {
-  if (!selectedPlayer || isProcessing) return;
+  const handlePrint = useCallback(async () => {
+    if (!selectedPlayer || isProcessing) return;
 
-  try {
-    setIsProcessing(true);
-    setProcessingMessage('Preparando impresión...');
-    
-    // Crear el contenido HTML para impresión con mejor manejo de imágenes
-    const printContent = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <title>Información del Jugador - ${selectedPlayer.nombre} ${selectedPlayer.apellido}</title>
-          <style>
-            body { 
-              font-family: Arial, sans-serif; 
-              margin: 0; 
-              padding: 20px; 
-              background: white; 
-              -webkit-print-color-adjust: exact;
-              print-color-adjust: exact;
-            }
-            .print-container { 
-              max-width: 800px; 
-              margin: 0 auto; 
-              background: white; 
-            }
-            .header { 
-              text-align: center; 
-              margin-bottom: 30px; 
-              border-bottom: 2px solid #2c3e50; 
-              padding-bottom: 20px; 
-            }
-            .header h1 { 
-              color: #2c3e50; 
-              margin: 0 0 10px 0; 
-              font-size: 24px; 
-            }
-            .header h2 { 
-              color: #34495e; 
-              margin: 0; 
-              font-size: 18px; 
-            }
-            .player-section { 
-              display: flex; 
-              gap: 30px; 
-              margin-bottom: 30px; 
-              align-items: flex-start;
-            }
-            .photo-section { 
-              flex: 0 0 200px; 
-            }
-            .player-photo { 
-              width: 200px; 
-              height: 200px; 
-              object-fit: cover; 
-              border-radius: 10px; 
-              border: 2px solid #ddd;
-              display: block;
-            }
-            .photo-placeholder { 
-              width: 200px; 
-              height: 200px; 
-              background: #f0f0f0; 
-              border-radius: 10px; 
-              display: flex; 
-              align-items: center; 
-              justify-content: center; 
-              font-size: 60px; 
-              color: #999; 
-              border: 2px solid #ddd;
-            }
-            .info-section { 
-              flex: 1; 
-            }
-            .player-name { 
-              color: #2c3e50; 
-              margin-bottom: 20px; 
-              font-size: 22px; 
-              font-weight: bold; 
-            }
-            .info-row { 
-              margin-bottom: 8px; 
-              display: flex;
-            }
-            .info-label { 
-              font-weight: bold; 
-              width: 140px; 
-              flex-shrink: 0;
-            }
-            .info-value {
-              flex: 1;
-            }
-            .section { 
-              border-top: 2px solid #eee; 
-              padding-top: 20px; 
-              margin-top: 20px; 
-            }
-            .section-title { 
-              color: #2c3e50; 
-              margin-bottom: 15px; 
-              font-size: 18px; 
-              font-weight: bold; 
-            }
-            .grid { 
-              display: grid; 
-              grid-template-columns: 1fr 1fr 1fr; 
-              gap: 20px; 
-              margin-bottom: 20px; 
-            }
-            .grid-item { 
-              padding: 10px; 
-              background: #f8f9fa; 
-              border-radius: 5px; 
-              border: 1px solid #dee2e6; 
-            }
-            .grid-label { 
-              font-weight: bold; 
-              margin-bottom: 5px; 
-              color: #495057; 
-            }
-            .footer { 
-              margin-top: 40px; 
-              text-align: center; 
-              color: #7f8c8d; 
-              font-size: 12px; 
-              border-top: 1px solid #eee; 
-              padding-top: 20px; 
-            }
-            @media print {
+    try {
+      setIsProcessing(true);
+      setProcessingMessage('Preparando impresión...');
+      
+      // Crear el contenido HTML para impresión con mejor manejo de imágenes
+      const printContent = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <title>Información del Jugador - ${selectedPlayer.nombre} ${selectedPlayer.apellido}</title>
+            <style>
               body { 
+                font-family: Arial, sans-serif; 
                 margin: 0; 
-                padding: 15px;
-              }
-              @page { 
-                margin: 1cm; 
-                size: A4; 
-              }
-              .print-container { 
-                max-width: none; 
-                margin: 0;
-              }
-              .player-section { 
-                page-break-inside: avoid; 
-              }
-              .section { 
-                page-break-inside: avoid; 
-              }
-              .player-photo {
+                padding: 20px; 
+                background: white; 
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
               }
-            }
-          </style>
-          <script>
-            // Función para manejar errores de imagen
-            function handleImageError(img) {
-              console.log('Error cargando imagen, mostrando placeholder');
-              img.style.display = 'none';
-              var placeholder = img.nextElementSibling;
-              if (placeholder && placeholder.classList.contains('photo-placeholder')) {
-                placeholder.style.display = 'flex';
+              .print-container { 
+                max-width: 800px; 
+                margin: 0 auto; 
+                background: white; 
               }
-            }
-            
-            // Precargar imagen antes de imprimir
-            window.onload = function() {
-              var img = document.getElementById('player-photo');
-              if (img && img.complete && img.naturalHeight === 0) {
-                handleImageError(img);
+              .header { 
+                text-align: center; 
+                margin-bottom: 30px; 
+                border-bottom: 2px solid #2c3e50; 
+                padding-bottom: 20px; 
               }
-            };
-          </script>
-        </head>
-        <body>
-          <div class="print-container">
-            <div class="header">
-              <h1>Corporación de Futbol Ocañero</h1>
-              <h2>Información del Jugador</h2>
-            </div>
-            
-            <div class="player-section">
-              <div class="photo-section">
-                ${selectedPlayer.foto_perfil_url ? 
-                  `<img 
-                    id="player-photo"
-                    src="${selectedPlayer.foto_perfil_url}?t=${Date.now()}" 
-                    alt="Foto de ${selectedPlayer.nombre} ${selectedPlayer.apellido}" 
-                    class="player-photo" 
-                    onerror="handleImageError(this)"
-                    crossorigin="anonymous"
-                  >
-                   <div class="photo-placeholder" style="display:none;">👤</div>` :
-                  `<div class="photo-placeholder">👤</div>`
-                }
-              </div>
-              <div class="info-section">
-                <div class="player-name">${selectedPlayer.nombre} ${selectedPlayer.apellido}</div>
-                <div class="info-row">
-                  <span class="info-label">Documento:</span>
-                  <span class="info-value">${selectedPlayer.documento}</span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">Edad:</span>
-                  <span class="info-value">${calculateAge(selectedPlayer.fecha_nacimiento)} años</span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">Fecha de Nacimiento:</span>
-                  <span class="info-value">${formatDate(selectedPlayer.fecha_nacimiento)}</span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">Categoría:</span>
-                  <span class="info-value">${selectedPlayer.categoria?.nombre || 'Sin categoría'}</span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">Escuela:</span>
-                  <span class="info-value">${selectedPlayer.escuela?.nombre || 'Sin escuela'}</span>
-                </div>
-              </div>
-            </div>
-            
-            <div class="section">
-              <div class="section-title">Información de Ubicación</div>
-              <div class="grid">
-                <div class="grid-item">
-                  <div class="grid-label">País</div>
-                  ${selectedPlayer.pais || 'No especificado'}
-                </div>
-                <div class="grid-item">
-                  <div class="grid-label">Departamento</div>
-                  ${selectedPlayer.departamento || 'No especificado'}
-                </div>
-                <div class="grid-item">
-                  <div class="grid-label">Ciudad</div>
-                  ${selectedPlayer.ciudad || 'No especificado'}
-                </div>
-              </div>
-            </div>
-            
-            <div class="section">
-              <div class="section-title">Información Médica</div>
-              <div class="grid" style="grid-template-columns: 1fr 1fr;">
-                <div class="grid-item">
-                  <div class="grid-label">EPS</div>
-                  ${selectedPlayer.eps || 'No especificado'}
-                </div>
-                <div class="grid-item">
-                  <div class="grid-label">Tipo de EPS</div>
-                  ${selectedPlayer.tipo_eps || 'No especificado'}
-                </div>
-              </div>
-            </div>
-            
-            <div class="footer">
-              <p>Documento generado el ${new Date().toLocaleDateString('es-CO')} a las ${new Date().toLocaleTimeString('es-CO')}</p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
-
-    const printWindow = window.open('', '_blank', 'width=900,height=700');
-    
-    if (!printWindow) {
-      throw new Error('No se pudo abrir la ventana de impresión');
-    }
-
-    printWindow.document.open();
-    printWindow.document.write(printContent);
-    printWindow.document.close();
-    
-    // Esperar a que la imagen se cargue antes de imprimir
-    await new Promise<void>((resolve) => {
-      if (printWindow.document.readyState === 'complete') {
-        resolve();
-      } else {
-        printWindow.addEventListener('load', () => resolve());
-      }
-    });
-
-    // Esperar adicionalmente para que las imágenes se carguen
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    printWindow.focus();
-    
-    // Usar un enfoque más robusto para la impresión
-    const printWithFallback = () => {
-      try {
-        printWindow.print();
-        
-        // Cerrar la ventana después de un tiempo
-        setTimeout(() => {
-          try {
-            if (!printWindow.closed) {
-              printWindow.close();
-            }
-          } catch (closeError) {
-            console.log('No se pudo cerrar la ventana automáticamente');
-          }
-        }, 1000);
-        
-      } catch (printError: any) {
-        console.error('Error al imprimir:', printError);
-        
-        // Fallback: Descargar como PDF si la impresión directa falla
-        try {
-          const printStyles = `
-            <style>
+              .header h1 { 
+                color: #2c3e50; 
+                margin: 0 0 10px 0; 
+                font-size: 24px; 
+              }
+              .header h2 { 
+                color: #34495e; 
+                margin: 0; 
+                font-size: 18px; 
+              }
+              .player-section { 
+                display: flex; 
+                gap: 30px; 
+                margin-bottom: 30px; 
+                align-items: flex-start;
+              }
+              .photo-section { 
+                flex: 0 0 200px; 
+              }
+              .player-photo { 
+                width: 200px; 
+                height: 200px; 
+                object-fit: cover; 
+                border-radius: 10px; 
+                border: 2px solid #ddd;
+                display: block;
+              }
+              .photo-placeholder { 
+                width: 200px; 
+                height: 200px; 
+                background: #f0f0f0; 
+                border-radius: 10px; 
+                display: flex; 
+                align-items: center; 
+                justify-content: center; 
+                font-size: 60px; 
+                color: #999; 
+                border: 2px solid #ddd;
+              }
+              .info-section { 
+                flex: 1; 
+              }
+              .player-name { 
+                color: #2c3e50; 
+                margin-bottom: 20px; 
+                font-size: 22px; 
+                font-weight: bold; 
+              }
+              .info-row { 
+                margin-bottom: 8px; 
+                display: flex;
+              }
+              .info-label { 
+                font-weight: bold; 
+                width: 140px; 
+                flex-shrink: 0;
+              }
+              .info-value {
+                flex: 1;
+              }
+              .section { 
+                border-top: 2px solid #eee; 
+                padding-top: 20px; 
+                margin-top: 20px; 
+              }
+              .section-title { 
+                color: #2c3e50; 
+                margin-bottom: 15px; 
+                font-size: 18px; 
+                font-weight: bold; 
+              }
+              .grid { 
+                display: grid; 
+                grid-template-columns: 1fr 1fr 1fr; 
+                gap: 20px; 
+                margin-bottom: 20px; 
+              }
+              .grid-item { 
+                padding: 10px; 
+                background: #f8f9fa; 
+                border-radius: 5px; 
+                border: 1px solid #dee2e6; 
+              }
+              .grid-label { 
+                font-weight: bold; 
+                margin-bottom: 5px; 
+                color: #495057; 
+              }
+              .footer { 
+                margin-top: 40px; 
+                text-align: center; 
+                color: #7f8c8d; 
+                font-size: 12px; 
+                border-top: 1px solid #eee; 
+                padding-top: 20px; 
+              }
               @media print {
-                body { margin: 0; padding: 15mm; }
-                .print-container { max-width: 100%; }
+                body { 
+                  margin: 0; 
+                  padding: 15px;
+                }
+                @page { 
+                  margin: 1cm; 
+                  size: A4; 
+                }
+                .print-container { 
+                  max-width: none; 
+                  margin: 0;
+                }
+                .player-section { 
+                  page-break-inside: avoid; 
+                }
+                .section { 
+                  page-break-inside: avoid; 
+                }
+                .player-photo {
+                  -webkit-print-color-adjust: exact;
+                  print-color-adjust: exact;
+                }
               }
             </style>
-          `;
-          
-          const pdfContent = printContent.replace('</head>', printStyles + '</head>');
-          const blob = new Blob([pdfContent], { type: 'text/html' });
-          const url = URL.createObjectURL(blob);
-          
-          const downloadLink = document.createElement('a');
-          downloadLink.href = url;
-          downloadLink.download = `Jugador_${selectedPlayer.nombre}_${selectedPlayer.apellido}.html`;
-          downloadLink.click();
-          
-          URL.revokeObjectURL(url);
-          
-          setError('Se descargó el documento como archivo HTML para imprimir');
-          
-        } catch (fallbackError) {
-          setError('Error al imprimir y al intentar descargar el documento');
-        }
-        
-        try {
-          printWindow.close();
-        } catch (e) {
-          console.log('No se pudo cerrar la ventana de impresión');
-        }
+            <script>
+              // Función para manejar errores de imagen
+              function handleImageError(img) {
+                console.log('Error cargando imagen, mostrando placeholder');
+                img.style.display = 'none';
+                var placeholder = img.nextElementSibling;
+                if (placeholder && placeholder.classList.contains('photo-placeholder')) {
+                  placeholder.style.display = 'flex';
+                }
+              }
+              
+              // Precargar imagen antes de imprimir
+              window.onload = function() {
+                var img = document.getElementById('player-photo');
+                if (img && img.complete && img.naturalHeight === 0) {
+                  handleImageError(img);
+                }
+              };
+            </script>
+          </head>
+          <body>
+            <div class="print-container">
+              <div class="header">
+                <h1>Corporación de Futbol Ocañero</h1>
+                <h2>Información del Jugador</h2>
+              </div>
+              
+              <div class="player-section">
+                <div class="photo-section">
+                  ${selectedPlayer.foto_perfil_url ? 
+                    `<img 
+                      id="player-photo"
+                      src="${selectedPlayer.foto_perfil_url}?t=${Date.now()}" 
+                      alt="Foto de ${selectedPlayer.nombre} ${selectedPlayer.apellido}" 
+                      class="player-photo" 
+                      onerror="handleImageError(this)"
+                      crossorigin="anonymous"
+                    >
+                     <div class="photo-placeholder" style="display:none;">👤</div>` :
+                    `<div class="photo-placeholder">👤</div>`
+                  }
+                </div>
+                <div class="info-section">
+                  <div class="player-name">${selectedPlayer.nombre} ${selectedPlayer.apellido}</div>
+                  <div class="info-row">
+                    <span class="info-label">Documento:</span>
+                    <span class="info-value">${selectedPlayer.documento}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">Edad:</span>
+                    <span class="info-value">${calculateAge(selectedPlayer.fecha_nacimiento)} años</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">Fecha de Nacimiento:</span>
+                    <span class="info-value">${formatDate(selectedPlayer.fecha_nacimiento)}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">Categoría:</span>
+                    <span class="info-value">${selectedPlayer.categoria?.nombre || 'Sin categoría'}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">Escuela:</span>
+                    <span class="info-value">${selectedPlayer.escuela?.nombre || 'Sin escuela'}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="section">
+                <div class="section-title">Información de Ubicación</div>
+                <div class="grid">
+                  <div class="grid-item">
+                    <div class="grid-label">País</div>
+                    ${selectedPlayer.pais || 'No especificado'}
+                  </div>
+                  <div class="grid-item">
+                    <div class="grid-label">Departamento</div>
+                    ${selectedPlayer.departamento || 'No especificado'}
+                  </div>
+                  <div class="grid-item">
+                    <div class="grid-label">Ciudad</div>
+                    ${selectedPlayer.ciudad || 'No especificado'}
+                  </div>
+                </div>
+              </div>
+              
+              <div class="section">
+                <div class="section-title">Información Médica</div>
+                <div class="grid" style="grid-template-columns: 1fr 1fr;">
+                  <div class="grid-item">
+                    <div class="grid-label">EPS</div>
+                    ${selectedPlayer.eps || 'No especificado'}
+                  </div>
+                  <div class="grid-item">
+                    <div class="grid-label">Tipo de EPS</div>
+                    ${selectedPlayer.tipo_eps || 'No especificado'}
+                  </div>
+                </div>
+              </div>
+              
+              <div class="footer">
+                <p>Documento generado el ${new Date().toLocaleDateString('es-CO')} a las ${new Date().toLocaleTimeString('es-CO')}</p>
+              </div>
+            </div>
+          </body>
+        </html>
+      `;
+
+      const printWindow = window.open('', '_blank', 'width=900,height=700');
+      
+      if (!printWindow) {
+        throw new Error('No se pudo abrir la ventana de impresión');
       }
-    };
 
-    // Esperar un poco más para asegurar que todo esté cargado
-    setTimeout(printWithFallback, 500);
-    
-  } catch (error: any) {
-    console.error('Error en impresión:', error);
-    setError(`Error al preparar la impresión: ${error?.message || 'Error desconocido'}`);
-  } finally {
-    setIsProcessing(false);
-    setProcessingMessage('');
-  }
-}, [selectedPlayer, isProcessing]);
+      printWindow.document.open();
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      
+      // Esperar a que la imagen se cargue antes de imprimir
+      await new Promise<void>((resolve) => {
+        if (printWindow.document.readyState === 'complete') {
+          resolve();
+        } else {
+          printWindow.addEventListener('load', () => resolve());
+        }
+      });
 
-  // FUNCIÓN DE DESCARGA DE REGISTRO
+      // Esperar adicionalmente para que las imágenes se carguen
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      printWindow.focus();
+      
+      // Usar un enfoque más robusto para la impresión
+      const printWithFallback = () => {
+        try {
+          printWindow.print();
+          
+          // Cerrar la ventana después de un tiempo
+          setTimeout(() => {
+            try {
+              if (!printWindow.closed) {
+                printWindow.close();
+              }
+            } catch (closeError) {
+              console.log('No se pudo cerrar la ventana automáticamente');
+            }
+          }, 1000);
+          
+        } catch (printError: any) {
+          console.error('Error al imprimir:', printError);
+          
+          // Fallback: Descargar como PDF si la impresión directa falla
+          try {
+            const printStyles = `
+              <style>
+                @media print {
+                  body { margin: 0; padding: 15mm; }
+                  .print-container { max-width: 100%; }
+                }
+              </style>
+            `;
+            
+            const pdfContent = printContent.replace('</head>', printStyles + '</head>');
+            const blob = new Blob([pdfContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            
+            const downloadLink = document.createElement('a');
+            downloadLink.href = url;
+            downloadLink.download = `Jugador_${selectedPlayer.nombre}_${selectedPlayer.apellido}.html`;
+            downloadLink.click();
+            
+            URL.revokeObjectURL(url);
+            
+            setError('Se descargó el documento como archivo HTML para imprimir');
+            
+          } catch (fallbackError) {
+            setError('Error al imprimir y al intentar descargar el documento');
+          }
+          
+          try {
+            printWindow.close();
+          } catch (e) {
+            console.log('No se pudo cerrar la ventana de impresión');
+          }
+        }
+      };
+
+      // Esperar un poco más para asegurar que todo esté cargado
+      setTimeout(printWithFallback, 500);
+      
+    } catch (error: any) {
+      console.error('Error en impresión:', error);
+      setError(`Error al preparar la impresión: ${error?.message || 'Error desconocido'}`);
+    } finally {
+      setIsProcessing(false);
+      setProcessingMessage('');
+    }
+  }, [selectedPlayer, isProcessing]);
+
+  // FUNCIÓN DE DESCARGA DE REGISTRO MEJORADA
   const handleDownloadRegister = useCallback(async () => {
     if (!selectedPlayer || isProcessing) return;
 
@@ -1014,204 +1014,280 @@ const handlePrint = useCallback(async () => {
       setIsProcessing(true);
       setProcessingMessage('Preparando descarga...');
       
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      let downloadUrl = '';
-      let filename = '';
-
+      // Array para almacenar las URLs de los documentos disponibles
+      const documentsToDownload = [];
+      
       if (selectedPlayer.registro_civil_url) {
-        downloadUrl = selectedPlayer.registro_civil_url;
-        filename = `Registro_Civil_${selectedPlayer.nombre}_${selectedPlayer.apellido}_${selectedPlayer.documento}.pdf`;
-      } else if (selectedPlayer.documento_pdf_url) {
-        downloadUrl = selectedPlayer.documento_pdf_url;
-        filename = `Documento_${selectedPlayer.nombre}_${selectedPlayer.apellido}_${selectedPlayer.documento}.pdf`;
+        documentsToDownload.push({
+          url: selectedPlayer.registro_civil_url,
+          filename: `Registro_Civil_${selectedPlayer.nombre}_${selectedPlayer.apellido}_${selectedPlayer.documento}.pdf`,
+          type: 'registro_civil'
+        });
+      }
+      
+      if (selectedPlayer.documento_pdf_url) {
+        documentsToDownload.push({
+          url: selectedPlayer.documento_pdf_url,
+          filename: `Documento_Identidad_${selectedPlayer.nombre}_${selectedPlayer.apellido}_${selectedPlayer.documento}.pdf`,
+          type: 'documento_identidad'
+        });
       }
 
-      if (downloadUrl) {
-        const link = document.createElement('a');
-        link.href = downloadUrl;
-        link.download = filename;
-        link.target = '_blank';
-        link.style.display = 'none';
-        
-        document.body.appendChild(link);
-        
-        setTimeout(() => {
-          link.click();
-          setTimeout(() => {
-            document.body.removeChild(link);
-            setIsProcessing(false);
-            setProcessingMessage('');
-          }, 100);
-        }, 100);
-      } else {
+      if (documentsToDownload.length === 0) {
         setError('No hay documentos disponibles para descargar');
         setIsProcessing(false);
         setProcessingMessage('');
+        return;
       }
+
+      // Función para descargar un archivo individual
+      const downloadFile = async (fileInfo: {url: string, filename: string, type: string}) => {
+        return new Promise<void>(async (resolve, reject) => {
+          try {
+            console.log(`Iniciando descarga de: ${fileInfo.filename}`);
+            
+            // Intentar descargar usando fetch y Blob (método más confiable)
+            const response = await fetch(fileInfo.url);
+            
+            if (!response.ok) {
+              throw new Error(`Error al obtener el archivo: ${response.status} ${response.statusText}`);
+            }
+            
+            const blob = await response.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = fileInfo.filename;
+            link.style.display = 'none';
+            
+            document.body.appendChild(link);
+            
+            // Disparar el evento de clic
+            link.click();
+            
+            // Limpiar después de un tiempo
+            setTimeout(() => {
+              document.body.removeChild(link);
+              URL.revokeObjectURL(blobUrl);
+              resolve();
+            }, 100);
+            
+          } catch (error) {
+            console.error(`Error descargando ${fileInfo.type}:`, error);
+            
+            // Fallback: intentar con el método tradicional
+            try {
+              const link = document.createElement('a');
+              link.href = fileInfo.url;
+              link.download = fileInfo.filename;
+              link.target = '_blank';
+              link.style.display = 'none';
+              
+              document.body.appendChild(link);
+              link.click();
+              
+              setTimeout(() => {
+                document.body.removeChild(link);
+                resolve();
+              }, 100);
+            } catch (fallbackError) {
+              reject(`No se pudo descargar el ${fileInfo.type}`);
+            }
+          }
+        });
+      };
+
+      // Descargar todos los documentos disponibles
+      if (documentsToDownload.length === 1) {
+        // Si solo hay un documento, descargarlo directamente
+        await downloadFile(documentsToDownload[0]);
+        setProcessingMessage('Descarga completada');
+      } else {
+        // Si hay múltiples documentos, descargarlos secuencialmente
+        setProcessingMessage(`Descargando 1 de ${documentsToDownload.length} documentos...`);
+        
+        for (let i = 0; i < documentsToDownload.length; i++) {
+          setProcessingMessage(`Descargando ${i + 1} de ${documentsToDownload.length} documentos...`);
+          await downloadFile(documentsToDownload[i]);
+          
+          // Pequeña pausa entre descargas
+          if (i < documentsToDownload.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        }
+        
+        setProcessingMessage('Todos los documentos descargados');
+      }
+
+      // Mostrar mensaje de éxito
+      setTimeout(() => {
+        setIsProcessing(false);
+        setProcessingMessage('');
+      }, 1000);
       
     } catch (error: any) {
       console.error('Error en descarga:', error);
-      setError('Error al preparar la descarga');
+      setError(`Error al descargar documentos: ${error.message || 'Error desconocido'}`);
       setIsProcessing(false);
       setProcessingMessage('');
     }
   }, [selectedPlayer, isProcessing]);
 
   // FUNCIÓN PDF PARA GENERAR IDENTIFICACIÓN
-const handleDownloadID = useCallback(async () => {
-  if (!selectedPlayer || isProcessing || !selectedPlayer.foto_perfil_url) return;
+  const handleDownloadID = useCallback(async () => {
+    if (!selectedPlayer || isProcessing || !selectedPlayer.foto_perfil_url) return;
 
-  try {
-    setIsProcessing(true);
-    setProcessingMessage('Generando PDF...');
-    
-    await new Promise(resolve => setTimeout(resolve, 100));
+    try {
+      setIsProcessing(true);
+      setProcessingMessage('Generando PDF...');
+      
+      await new Promise(resolve => setTimeout(resolve, 100));
 
-    // Importar jsPDF correctamente
-    const jsPDFModule = await import('jspdf');
-    const jsPDF = jsPDFModule.default;
-    
-    const pdf = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4'
-    });
+      // Importar jsPDF correctamente
+      const jsPDFModule = await import('jspdf');
+      const jsPDF = jsPDFModule.default;
+      
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
 
-    pdf.setFont('helvetica');
-    
-    // Header
-    pdf.setFillColor(52, 152, 219);
-    pdf.rect(0, 0, 210, 25, 'F');
-    
-    pdf.setTextColor(255, 255, 255);
-    pdf.setFontSize(18);
-    pdf.text('CORPORACIÓN DE FUTBOL OCEAÑERO', 105, 12, { align: 'center' });
-    pdf.setFontSize(12);
-    pdf.text('IDENTIFICACIÓN DE JUGADOR', 105, 20, { align: 'center' });
+      pdf.setFont('helvetica');
+      
+      // Header
+      pdf.setFillColor(52, 152, 219);
+      pdf.rect(0, 0, 210, 25, 'F');
+      
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(18);
+      pdf.text('CORPORACIÓN DE FUTBOL OCEAÑERO', 105, 12, { align: 'center' });
+      pdf.setFontSize(12);
+      pdf.text('IDENTIFICACIÓN DE JUGADOR', 105, 20, { align: 'center' });
 
-    pdf.setTextColor(0, 0, 0);
-    let yPosition = 40;
-    
-    // Información del jugador
-    pdf.setFontSize(16);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text(`${selectedPlayer.nombre} ${selectedPlayer.apellido}`, 20, yPosition);
-    
-    yPosition += 10;
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'normal');
-    pdf.text(`Documento: ${selectedPlayer.documento}`, 20, yPosition);
-    
-    yPosition += 8;
-    pdf.text(`Edad: ${calculateAge(selectedPlayer.fecha_nacimiento)} años`, 20, yPosition);
-    
-    yPosition += 8;
-    pdf.text(`Fecha de Nacimiento: ${formatDate(selectedPlayer.fecha_nacimiento)}`, 20, yPosition);
-    
-    yPosition += 15;
-    
-    // Ubicación
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('UBICACIÓN:', 20, yPosition);
-    yPosition += 8;
-    pdf.setFont('helvetica', 'normal');
-    pdf.text(`País: ${selectedPlayer.pais}`, 20, yPosition);
-    yPosition += 6;
-    pdf.text(`Departamento: ${selectedPlayer.departamento}`, 20, yPosition);
-    yPosition += 6;
-    pdf.text(`Ciudad: ${selectedPlayer.ciudad}`, 20, yPosition);
-    
-    yPosition += 15;
-    
-    // Información deportiva
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('INFORMACIÓN DEPORTIVA:', 20, yPosition);
-    yPosition += 8;
-    pdf.setFont('helvetica', 'normal');
-    pdf.text(`Categoría: ${selectedPlayer.categoria?.nombre || 'Sin categoría'}`, 20, yPosition);
-    yPosition += 6;
-    pdf.text(`Escuela: ${selectedPlayer.escuela?.nombre || 'Sin escuela'}`, 20, yPosition);
-    
-    yPosition += 15;
-    
-    // Información médica
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('INFORMACIÓN MÉDICA:', 20, yPosition);
-    yPosition += 8;
-    pdf.setFont('helvetica', 'normal');
-    pdf.text(`EPS: ${selectedPlayer.eps}`, 20, yPosition);
-    yPosition += 6;
-    pdf.text(`Tipo de EPS: ${selectedPlayer.tipo_eps}`, 20, yPosition);
+      pdf.setTextColor(0, 0, 0);
+      let yPosition = 40;
+      
+      // Información del jugador
+      pdf.setFontSize(16);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`${selectedPlayer.nombre} ${selectedPlayer.apellido}`, 20, yPosition);
+      
+      yPosition += 10;
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`Documento: ${selectedPlayer.documento}`, 20, yPosition);
+      
+      yPosition += 8;
+      pdf.text(`Edad: ${calculateAge(selectedPlayer.fecha_nacimiento)} años`, 20, yPosition);
+      
+      yPosition += 8;
+      pdf.text(`Fecha de Nacimiento: ${formatDate(selectedPlayer.fecha_nacimiento)}`, 20, yPosition);
+      
+      yPosition += 15;
+      
+      // Ubicación
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('UBICACIÓN:', 20, yPosition);
+      yPosition += 8;
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`País: ${selectedPlayer.pais}`, 20, yPosition);
+      yPosition += 6;
+      pdf.text(`Departamento: ${selectedPlayer.departamento}`, 20, yPosition);
+      yPosition += 6;
+      pdf.text(`Ciudad: ${selectedPlayer.ciudad}`, 20, yPosition);
+      
+      yPosition += 15;
+      
+      // Información deportiva
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('INFORMACIÓN DEPORTIVA:', 20, yPosition);
+      yPosition += 8;
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`Categoría: ${selectedPlayer.categoria?.nombre || 'Sin categoría'}`, 20, yPosition);
+      yPosition += 6;
+      pdf.text(`Escuela: ${selectedPlayer.escuela?.nombre || 'Sin escuela'}`, 20, yPosition);
+      
+      yPosition += 15;
+      
+      // Información médica
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('INFORMACIÓN MÉDICA:', 20, yPosition);
+      yPosition += 8;
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`EPS: ${selectedPlayer.eps}`, 20, yPosition);
+      yPosition += 6;
+      pdf.text(`Tipo de EPS: ${selectedPlayer.tipo_eps}`, 20, yPosition);
 
-    // Imagen
-    if (selectedPlayer.foto_perfil_url) {
-      try {
-        setProcessingMessage('Procesando imagen...');
-        
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        
-        await new Promise<void>((resolve) => {
-          const timeout = setTimeout(() => resolve(), 3000);
+      // Imagen
+      if (selectedPlayer.foto_perfil_url) {
+        try {
+          setProcessingMessage('Procesando imagen...');
           
-          img.onload = () => {
-            clearTimeout(timeout);
-            try {
-              const canvas = document.createElement('canvas');
-              const ctx = canvas.getContext('2d');
-              
-              const maxWidth = 40;
-              const maxHeight = 50;
-              
-              canvas.width = maxWidth;
-              canvas.height = maxHeight;
-              
-              if (ctx) {
-                ctx.drawImage(img, 0, 0, maxWidth, maxHeight);
-                const imgData = canvas.toDataURL('image/jpeg', 0.8);
-                pdf.addImage(imgData, 'JPEG', 150, 35, maxWidth, maxHeight);
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          
+          await new Promise<void>((resolve) => {
+            const timeout = setTimeout(() => resolve(), 3000);
+            
+            img.onload = () => {
+              clearTimeout(timeout);
+              try {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                const maxWidth = 40;
+                const maxHeight = 50;
+                
+                canvas.width = maxWidth;
+                canvas.height = maxHeight;
+                
+                if (ctx) {
+                  ctx.drawImage(img, 0, 0, maxWidth, maxHeight);
+                  const imgData = canvas.toDataURL('image/jpeg', 0.8);
+                  pdf.addImage(imgData, 'JPEG', 150, 35, maxWidth, maxHeight);
+                }
+                resolve();
+              } catch (err) {
+                resolve();
               }
+            };
+            
+            img.onerror = () => {
+              clearTimeout(timeout);
               resolve();
-            } catch (err) {
-              resolve();
-            }
-          };
-          
-          img.onerror = () => {
-            clearTimeout(timeout);
-            resolve();
-          };
-          
-          img.src = selectedPlayer.foto_perfil_url!;
-        });
-      } catch (err) {
-        console.warn('Error cargando imagen:', err);
+            };
+            
+            img.src = selectedPlayer.foto_perfil_url!;
+          });
+        } catch (err) {
+          console.warn('Error cargando imagen:', err);
+        }
       }
-    }
 
-    // Footer
-    const now = new Date();
-    pdf.setFontSize(8);
-    pdf.setTextColor(128, 128, 128);
-    pdf.text(`Generado el ${now.toLocaleDateString('es-CO')} a las ${now.toLocaleTimeString('es-CO')}`, 105, 280, { align: 'center' });
+      // Footer
+      const now = new Date();
+      pdf.setFontSize(8);
+      pdf.setTextColor(128, 128, 128);
+      pdf.text(`Generado el ${now.toLocaleDateString('es-CO')} a las ${now.toLocaleTimeString('es-CO')}`, 105, 280, { align: 'center' });
 
-    setProcessingMessage('Descargando archivo...');
-    
-    setTimeout(() => {
-      const filename = `ID_${selectedPlayer.nombre}_${selectedPlayer.apellido}_${selectedPlayer.documento}.pdf`;
-      pdf.save(filename);
+      setProcessingMessage('Descargando archivo...');
+      
+      setTimeout(() => {
+        const filename = `ID_${selectedPlayer.nombre}_${selectedPlayer.apellido}_${selectedPlayer.documento}.pdf`;
+        pdf.save(filename);
+        setIsProcessing(false);
+        setProcessingMessage('');
+      }, 100);
+      
+    } catch (error: any) {
+      console.error('Error generando PDF:', error);
+      setError('Error generando el PDF de identificación');
       setIsProcessing(false);
       setProcessingMessage('');
-    }, 100);
-    
-  } catch (error: any) {
-    console.error('Error generando PDF:', error);
-    setError('Error generando el PDF de identificación');
-    setIsProcessing(false);
-    setProcessingMessage('');
-  }
-}, [selectedPlayer, isProcessing]);
+    }
+  }, [selectedPlayer, isProcessing]);
 
   // Función para cerrar modal del jugador
   const closePlayerModal = useCallback(async () => {
