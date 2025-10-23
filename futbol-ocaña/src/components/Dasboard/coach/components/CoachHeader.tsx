@@ -30,8 +30,8 @@ const CoachHeader: React.FC<CoachHeaderProps> = ({
           <div className="col-auto">
             <div className="logo-section d-flex align-items-center">
               <img 
-                src="./src/img/logo_bueno.png" 
-                alt="Logo" 
+                src="/img/logo_bueno.png" 
+                alt="Logo Corporación de Futbol Ocañero" 
                 className="header-logo"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = 'https://via.placeholder.com/40x40/4caf50/ffffff?text=O';
@@ -40,24 +40,28 @@ const CoachHeader: React.FC<CoachHeaderProps> = ({
               <div className="company-info">
                 <h5 className="company-title mb-0">Corporación de</h5>
                 <h5 className="company-title mb-0">Futbol Ocañero</h5>
+                <small className="text-muted d-none d-md-block">
+                  {currentUser.rol === 'admin' ? 'Panel de Administración' : 'Panel de Entrenador'}
+                </small>
               </div>
             </div>
           </div>
           <div className="col"></div>
           <div className="col-auto">
             <div className="user-section d-flex align-items-center">
-              <span className="badge bg-primary me-3">
+              <span className="badge bg-primary me-2 me-md-3">
                 {currentUser.rol === 'admin' ? 'Administrador' : 'Entrenador'}
               </span>
               {currentUser.escuela && (
-                <span className="badge bg-secondary me-3">
+                <span className="badge bg-secondary me-2 me-md-3 d-none d-sm-inline">
                   {currentUser.escuela.nombre}
                 </span>
               )}
               <button 
-                className="btn btn-sm theme-toggle me-3"
+                className="btn btn-sm theme-toggle me-2 me-md-3"
                 onClick={onToggleDarkMode}
                 title={isDarkMode ? 'Activar modo claro' : 'Activar modo oscuro'}
+                aria-label={isDarkMode ? 'Activar modo claro' : 'Activar modo oscuro'}
               >
                 {isDarkMode ? '☀️' : '🌙'}
               </button>
@@ -66,6 +70,8 @@ const CoachHeader: React.FC<CoachHeaderProps> = ({
                 <button 
                   className={`btn btn-sm btn-outline-secondary hamburger-button ${showHamburgerMenu ? 'menu-open' : ''}`}
                   onClick={onToggleHamburgerMenu}
+                  aria-expanded={showHamburgerMenu}
+                  aria-label="Menú de usuario"
                 >
                   ☰
                 </button>
@@ -76,25 +82,38 @@ const CoachHeader: React.FC<CoachHeaderProps> = ({
                       <div className="user-info p-2 border-bottom mb-2">
                         <strong>{currentUser.nombre} {currentUser.apellido}</strong>
                         <div className="small text-muted">{currentUser.email}</div>
+                        <div className="small text-primary">
+                          {currentUser.rol === 'admin' ? 'Administrador' : 'Entrenador'}
+                        </div>
+                        {currentUser.escuela && (
+                          <div className="small text-muted">
+                            {currentUser.escuela.nombre}
+                          </div>
+                        )}
                       </div>
                       
                       <button 
                         className="btn btn-sm w-100 mb-1 text-start"
                         onClick={onViewProfile}
+                        aria-label="Ver mi perfil"
                       >
                         👤 Ver mi perfil
                       </button>
 
                       <button
-                        className="btn btn-primary w-100 mt-3"
+                        className="btn btn-primary w-100 mt-2 mb-2"
                         onClick={onAddPlayer}
+                        aria-label="Agregar nuevo jugador"
                       >
                         ➕ Agregar Jugador
                       </button>
                       
+                      <hr className="my-2" />
+                      
                       <button 
-                        className="btn btn-sm w-100 mb-1 text-start"
+                        className="btn btn-sm w-100 mb-1 text-start text-danger"
                         onClick={onLogout}
+                        aria-label="Cerrar sesión"
                       >
                         🚪 Cerrar sesión
                       </button>
@@ -103,7 +122,9 @@ const CoachHeader: React.FC<CoachHeaderProps> = ({
                 )}
               </div>
               
-              <span className="user-name ms-2">{currentUser.nombre} {currentUser.apellido}</span>
+              <span className="user-name ms-2 d-none d-md-inline">
+                {currentUser.nombre} {currentUser.apellido}
+              </span>
             </div>
           </div>
         </div>

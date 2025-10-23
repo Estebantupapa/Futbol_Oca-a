@@ -21,7 +21,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({
           <div className="col-auto">
             <div className="logo-section d-flex align-items-center">
               <img 
-                src="./src/img/logo_bueno.png" 
+                src="/img/logo_bueno.png" 
                 alt="Logo" 
                 className="header-logo"
                 onError={(e) => {

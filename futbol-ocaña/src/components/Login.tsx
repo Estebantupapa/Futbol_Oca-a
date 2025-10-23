@@ -93,98 +93,91 @@ const Login: React.FC = () => {
 
   return (
     <div className="login-container">
-      <div className="login-background">
-        <div className="container-fluid h-100">
-          <div className="row h-100 justify-content-center align-items-center">
-            <div className="col-11 col-sm-8 col-md-6 col-lg-4 col-xl-3">
-              <div className="login-card">
-                <div className="text-center mb-4">
-                  <div className="logo-container mb-3">
-                    <img 
-                      src="./src/img/logo_bueno.png" 
-                      alt="Logo Corporación de Futbol Ocañero" 
-                      className="logo-img"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = 'https://via.placeholder.com/50x50/4caf50/ffffff?text=O';
-                      }}
-                    />
-                  </div>
-                  <h4 className="company-name">
-                    Corporación de<br />
-                    Futbol Ocañero
-                  </h4>
-                </div>
-
-                <div className="login-section-title">
-                  INICIO DE SESIÓN
-                </div>
-
-                {error && (
-                  <div className="alert alert-danger py-2 px-3 mb-3" role="alert">
-                    <small>{error}</small>
-                  </div>
-                )}
-
-                <form onSubmit={handleSubmit}>
-                  <div className="mb-3">
-                    <label htmlFor="email" className="form-label">
-                      EMAIL <span className="text-danger">*</span>
-                    </label>
-                    <input
-                      type="email"
-                      className="form-control login-input"
-                      id="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      required
-                      disabled={isLoading}
-                      placeholder="admin@futbolocañero.com"
-                      autoComplete="email"
-                    />
-                  </div>
-
-                  <div className="mb-4">
-                    <label htmlFor="password" className="form-label">
-                      CONTRASEÑA <span className="text-danger">*</span>
-                    </label>
-                    <input
-                      type="password"
-                      className="form-control login-input"
-                      id="password"
-                      name="password"
-                      value={formData.password}
-                      onChange={handleInputChange}
-                      required
-                      disabled={isLoading}
-                      placeholder="Ingresa tu contraseña"
-                      autoComplete="current-password"
-                    />
-                  </div>
-
-                  <button 
-                    type="submit" 
-                    className="btn login-btn w-100 mb-3"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <>
-                        <span className="spinner-border spinner-border-sm me-2" role="status"></span>
-                        Ingresando...
-                      </>
-                    ) : (
-                      'Entrar'
-                    )}
-                  </button>
-                </form>
-
-                <div className="login-info-text">
-                  Las cuentas solo pueden ser creadas por<br />
-                  administradores
-                </div>
-              </div>
-            </div>
+      <div className="login-background"></div>
+      <div className="login-card">
+        <div className="text-center mb-4">
+          <div className="logo-container">
+            <img 
+              src="/img/logo_bueno.png" 
+              alt="Logo Corporación de Futbol Ocañero" 
+              className="logo-img"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = 'https://via.placeholder.com/50x50/4caf50/ffffff?text=O';
+              }}
+            />
           </div>
+          <h4 className="company-name">
+            Corporación de<br />
+            Futbol Ocañero
+          </h4>
+        </div>
+
+        <div className="login-section-title">
+          INICIO DE SESIÓN
+        </div>
+
+        {error && (
+          <div className="alert alert-danger" role="alert">
+            <small>{error}</small>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit}>
+          <div className="mb-3">
+            <label htmlFor="email" className="form-label">
+              EMAIL <span className="text-danger">*</span>
+            </label>
+            <input
+              type="email"
+              className="form-control login-input"
+              id="email"
+              name="email"
+              value={formData.email}
+              onChange={handleInputChange}
+              required
+              disabled={isLoading}
+              placeholder="admin@futbolocañero.com"
+              autoComplete="email"
+            />
+          </div>
+
+          <div className="mb-4">
+            <label htmlFor="password" className="form-label">
+              CONTRASEÑA <span className="text-danger">*</span>
+            </label>
+            <input
+              type="password"
+              className="form-control login-input"
+              id="password"
+              name="password"
+              value={formData.password}
+              onChange={handleInputChange}
+              required
+              disabled={isLoading}
+              placeholder="Ingresa tu contraseña"
+              autoComplete="current-password"
+            />
+          </div>
+
+          <button 
+            type="submit" 
+            className="btn login-btn"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                Ingresando...
+              </>
+            ) : (
+              'Entrar'
+            )}
+          </button>
+        </form>
+
+        <div className="login-info-text">
+          Las cuentas solo pueden ser creadas por<br />
+          administradores
         </div>
       </div>
     </div>
