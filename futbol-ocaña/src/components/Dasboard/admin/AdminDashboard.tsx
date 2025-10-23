@@ -20,6 +20,7 @@ import AddCoachModal from './AddCoachModal';
 import AddSchoolModal from './AddSchoolModal';
 import ProfileModal from '../coach/components/ProfileModal';
 import DocumentViewer from '../../shared/components/DocumentViewer';
+import DocumentActionsModal from './DocumentActionsModal';
 
 interface AdminDashboardProps {
   onLogout: () => void;
@@ -55,6 +56,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, currentUser }
   const [showAddSchoolModal, setShowAddSchoolModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showPlayerModal, setShowPlayerModal] = useState(false);
+  const [showDocumentActionsModal, setShowDocumentActionsModal] = useState(false);
   
   // Estados para jugador seleccionado
   const [selectedPlayer, setSelectedPlayer] = useState<Jugador | null>(null);
@@ -283,6 +285,48 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, currentUser }
       setIsProcessing(false);
     }
   }, [selectedPlayer, isProcessing]);
+
+  // Nuevos handlers para documentos en modal
+  const handleOpenDocumentActions = useCallback(() => {
+    setShowDocumentActionsModal(true);
+  }, []);
+
+  const handleCloseDocumentActions = useCallback(() => {
+    setShowDocumentActionsModal(false);
+  }, []);
+
+  const handlePrintDocument = useCallback((documentUrl: string, documentName: string) => {
+    try {
+      // Abrir el documento en una nueva ventana para imprimir
+      const printWindow = window.open(documentUrl, '_blank');
+      if (printWindow) {
+        printWindow.onload = () => {
+          printWindow.print();
+        };
+      }
+    } catch (err: any) {
+      setError(`Error al imprimir documento: ${err.message}`);
+    }
+  }, []);
+
+  const handleDownloadDocument = useCallback((documentUrl: string, documentName: string) => {
+    try {
+      // Crear un enlace temporal para descargar el archivo
+      const link = document.createElement('a');
+      link.href = documentUrl;
+      link.download = documentName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Mostrar confirmación
+      setTimeout(() => {
+        alert(`✅ Documento "${documentName}" descargado correctamente`);
+      }, 500);
+    } catch (err: any) {
+      setError(`Error al descargar documento: ${err.message}`);
+    }
+  }, []);
 
   // Handlers para crear nuevos registros
   const handleCreateAdmin = useCallback(async (adminData: any) => {
@@ -518,6 +562,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, currentUser }
                             <li>✅ Crear nuevos administradores</li>
                             <li>✅ Crear y asignar entrenadores</li>
                             <li>✅ Ver estadísticas generales</li>
+                            <li>✅ Gestionar documentos de jugadores</li>
                             <li>❌ <strong>No puede</strong> editar/eliminar jugadores</li>
                             <li>❌ <strong>No puede</strong> agregar jugadores directamente</li>
                           </ul>
@@ -533,6 +578,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, currentUser }
                             <li>Crear entrenadores 👨‍🏫</li>
                             <li>Los entrenadores agregan jugadores 👥</li>
                             <li>Supervisar todo el sistema 👁️</li>
+                            <li>Gestionar documentos 📁</li>
                           </ol>
                         </div>
                       </div>
@@ -572,6 +618,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, currentUser }
           url={documentViewer.url}
           filename={documentViewer.filename}
           onClose={handleCloseDocument}
+        />
+      )}
+
+      {/* Modal de acciones de documentos */}
+      {showDocumentActionsModal && selectedPlayer && (
+        <DocumentActionsModal
+          player={selectedPlayer}
+          onClose={handleCloseDocumentActions}
+          onPrint={handlePrintDocument}
+          onDownload={handleDownloadDocument}
         />
       )}
 
