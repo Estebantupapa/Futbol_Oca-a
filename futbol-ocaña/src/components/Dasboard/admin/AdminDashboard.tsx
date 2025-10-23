@@ -287,15 +287,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, currentUser }
   }, [selectedPlayer, isProcessing]);
 
   // Nuevos handlers para documentos en modal
-  const handleOpenDocumentActions = useCallback(() => {
+  /*const handleOpenDocumentActions = useCallback(() => {
     setShowDocumentActionsModal(true);
-  }, []);
+  }, []);*/
 
   const handleCloseDocumentActions = useCallback(() => {
     setShowDocumentActionsModal(false);
   }, []);
 
-  const handlePrintDocument = useCallback((documentUrl: string, documentName: string) => {
+  const handlePrintDocument = useCallback((documentUrl: string) => {
     try {
       // Abrir el documento en una nueva ventana para imprimir
       const printWindow = window.open(documentUrl, '_blank');

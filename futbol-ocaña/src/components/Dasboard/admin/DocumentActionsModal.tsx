@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { /*useState*/ } from 'react';
 import './DocumentActionsModal.css';
 
 interface DocumentActionsModalProps {
@@ -14,7 +14,7 @@ const DocumentActionsModal: React.FC<DocumentActionsModalProps> = ({
   onPrint,
   onDownload
 }) => {
-  const [selectedDocument, setSelectedDocument] = useState<string | null>(null);
+  /*const [selectedDocument, setSelectedDocument] = useState<string | null>(null);*/
 
   const documents = [
     {
@@ -81,7 +81,7 @@ const DocumentActionsModal: React.FC<DocumentActionsModalProps> = ({
 
         <div className="document-actions-body">
           <div className="documents-list">
-            {documents.map((doc, index) => (
+            {documents.map((doc) => (
               <div key={doc.type} className="document-item">
                 <div className="document-info">
                   <span className="document-icon">{doc.icon}</span>

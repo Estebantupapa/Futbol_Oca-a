@@ -59,7 +59,7 @@ const AdminPlayerModal: React.FC<AdminPlayerModalProps> = ({
     onDocumentOpen(url, filename);
   };
 
-  const handlePrintDocument = (documentUrl: string, documentName: string) => {
+  const handlePrintDocument = (documentUrl: string) => {
     // Abrir el documento en una nueva ventana para imprimir
     const printWindow = window.open(documentUrl, '_blank');
     if (printWindow) {
