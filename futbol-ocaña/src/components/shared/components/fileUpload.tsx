@@ -1,6 +1,6 @@
 // fileUpload.tsx
 import React, { useState, useRef } from 'react';
-import './FileUpload.css';
+import './fileUpload.css';
 import { PlayerFiles } from '../../../services/supabaseClient';
 
 interface FileUploadProps {
