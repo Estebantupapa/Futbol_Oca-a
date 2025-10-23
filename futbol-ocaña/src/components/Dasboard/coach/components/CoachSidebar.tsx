@@ -1,8 +1,8 @@
 import React from 'react';
-import { SidebarProps } from '../types/coachTypes';
+import { CoachSidebarProps } from '../types/coachTypes';
 import PlayerItem from './PlayerItem';
 
-const CoachSidebar: React.FC<SidebarProps> = ({
+const CoachSidebar: React.FC<CoachSidebarProps> = ({
   searchTerm,
   selectedCategory,
   showCategoryDropdown,

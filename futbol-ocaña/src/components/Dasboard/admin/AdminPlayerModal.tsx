@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Jugador, Categoria, Escuela } from '../../../services/supabaseClient';
 
 interface AdminPlayerModalProps {
@@ -18,20 +18,26 @@ const AdminPlayerModal: React.FC<AdminPlayerModalProps> = ({
   escuelas,
   onClose,
   onPrint,
-  onDownloadID,
-  onDownloadRegister,
   onDocumentOpen
 }) => {
+  const [imageError, setImageError] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+
+  useEffect(() => {
+    // Reset image states cuando cambia el jugador
+    setImageError(false);
+    setImageLoaded(false);
+  }, [player]);
+
   const calculateAge = (birthDate: string) => {
     const today = new Date();
     const birth = new Date(birthDate);
     let age = today.getFullYear() - birth.getFullYear();
     const monthDiff = today.getMonth() - birth.getMonth();
-    
+
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
       age--;
     }
-    
     return age;
   };
 
@@ -47,251 +53,205 @@ const AdminPlayerModal: React.FC<AdminPlayerModalProps> = ({
     return escuelas.find(esc => esc.id === player.escuela_id)?.nombre || 'Sin escuela';
   };
 
-  const handlePhotoClick = () => {
-    if (player.foto_perfil_url) {
-      onDocumentOpen(player.foto_perfil_url, `Foto_${player.nombre}_${player.apellido}.jpg`);
+  const handleDocumentOpen = (url: string, filename: string) => {
+    onDocumentOpen(url, filename);
+  };
+
+  const handleDownloadDocuments = async () => {
+    try {
+      let documentsOpened = 0;
+
+      if (player.documento_pdf_url) {
+        window.open(player.documento_pdf_url, '_blank');
+        documentsOpened++;
+      }
+
+      if (player.registro_civil_url) {
+        window.open(player.registro_civil_url, '_blank');
+        documentsOpened++;
+      }
+
+      if (documentsOpened > 0) {
+        setTimeout(() => {
+          alert(`✅ Se abrieron ${documentsOpened} documento(s) en nuevas pestañas`);
+        }, 500);
+      } else {
+        alert('⚠️ No hay documentos disponibles para visualizar');
+      }
+    } catch (error) {
+      console.error('Error al abrir documentos:', error);
+      alert('❌ Error al abrir los documentos');
     }
   };
 
+  // Función para forzar la recarga de la imagen
+  const reloadImage = () => {
+    setImageError(false);
+    setImageLoaded(false);
+  };
+
   return (
-    <div className="modal-overlay">
-      <div className="player-modal admin-player-modal">
-        <div className="modal-header">
-          <h5 className="modal-title">
-            👤 Información del Jugador - {player.nombre} {player.apellido}
-          </h5>
-          <button type="button" className="close-button" onClick={onClose}>
-            ×
-          </button>
+    <div className="player-modal-overlay" onClick={onClose}>
+      <div className="player-modal-container" onClick={(e) => e.stopPropagation()}>
+        <div className="player-modal-header">
+          <h3 className="player-modal-title">
+            INFORMACIÓN DEL JUGADOR - VISTA ADMINISTRADOR
+          </h3>
+          <button className="player-close-btn" onClick={onClose}>✕</button>
         </div>
-        
-        <div className="modal-body">
-          <div className="row">
-            {/* Foto del jugador */}
-            <div className="col-md-4">
-              <div className="photo-section">
-                <h5>FOTO DE PERFIL</h5>
-                <div className="photo-container">
-                  {player.foto_perfil_url ? (
-                    <div style={{ position: 'relative', display: 'inline-block' }}>
-                      <img 
-                        src={player.foto_perfil_url} 
-                        alt={`${player.nombre} ${player.apellido}`}
-                        className="player-photo"
-                        onClick={handlePhotoClick}
-                        style={{ cursor: 'pointer' }}
-                      />
-                      <button 
-                        className="photo-search-btn"
-                        onClick={handlePhotoClick}
-                        title="Ver foto en tamaño completo"
-                      >
-                        🔍
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="photo-placeholder">
-                      👤
+
+        <div className="player-modal-body">
+          {/* Header con foto e información básica */}
+          <div className="player-header-info">
+            <div className="player-photo-wrapper">
+              {player.foto_perfil_url && !imageError ? (
+                <>
+                  <img 
+                    src={`${player.foto_perfil_url}?t=${Date.now()}`} 
+                    alt={`${player.nombre} ${player.apellido}`}
+                    className="player-main-photo"
+                    onError={() => {
+                      console.error("Error cargando la imagen:", player.foto_perfil_url);
+                      setImageError(true);
+                    }}
+                    onLoad={() => setImageLoaded(true)}
+                    style={{ display: imageLoaded ? 'block' : 'none' }}
+                  />
+                  {!imageLoaded && !imageError && (
+                    <div className="player-photo-loading">Cargando...</div>
+                  )}
+                </>
+              ) : (
+                <div className="player-photo-fallback">
+                  👤
+                  {player.foto_perfil_url && imageError && (
+                    <div className="player-photo-error">
+                      <p>Error al cargar la imagen</p>
+                      <button onClick={reloadImage}>Reintentar</button>
                     </div>
                   )}
                 </div>
-                
-                {/* Información básica de la foto */}
-                <div className="mt-3 text-center">
-                  <small className="text-muted">
-                    {player.foto_perfil_url ? 
-                      'Haz clic en la foto para verla en tamaño completo' : 
-                      'No hay foto de perfil disponible'
-                    }
-                  </small>
-                </div>
-              </div>
+              )}
             </div>
-            
-            {/* Información del jugador */}
-            <div className="col-md-8">
-              <div className="info-section">
-                {/* Documento */}
-                <div className="info-field">
-                  <label>📄 DOCUMENTO DE IDENTIDAD</label>
-                  <div className="readonly-input form-control">{player.documento}</div>
-                </div>
-                
-                {/* Nombre y Apellido */}
-                <div className="row">
-                  <div className="col-md-6">
-                    <div className="info-field">
-                      <label>👤 NOMBRE</label>
-                      <div className="readonly-input form-control">{player.nombre}</div>
-                    </div>
-                  </div>
-                  <div className="col-md-6">
-                    <div className="info-field">
-                      <label>👤 APELLIDO</label>
-                      <div className="readonly-input form-control">{player.apellido}</div>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Fecha de Nacimiento y Categoría */}
-                <div className="row">
-                  <div className="col-md-6">
-                    <div className="info-field">
-                      <label>🎂 FECHA DE NACIMIENTO</label>
-                      <div className="readonly-input form-control">
-                        {formatDate(player.fecha_nacimiento)} 
-                        <br />
-                        <small className="text-muted">
-                          ({calculateAge(player.fecha_nacimiento)} años)
-                        </small>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="col-md-6">
-                    <div className="info-field">
-                      <label>⚽ CATEGORÍA</label>
-                      <div className="readonly-input form-control">{getCategoriaName()}</div>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Escuela */}
-                <div className="info-field">
-                  <label>🏫 ESCUELA</label>
-                  <div className="readonly-input form-control">{getEscuelaName()}</div>
-                </div>
-                
-                {/* Información Médica */}
-                <div className="row">
-                  <div className="col-md-6">
-                    <div className="info-field">
-                      <label>🏥 EPS</label>
-                      <div className="readonly-input form-control">{player.eps || 'No especificada'}</div>
-                    </div>
-                  </div>
-                  <div className="col-md-6">
-                    <div className="info-field">
-                      <label>📋 TIPO DE EPS</label>
-                      <div className="readonly-input form-control">{player.tipo_eps || 'No especificado'}</div>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Ubicación */}
-                <div className="row">
-                  <div className="col-md-4">
-                    <div className="info-field">
-                      <label>🌎 PAÍS</label>
-                      <div className="readonly-input form-control">{player.pais || 'No especificado'}</div>
-                    </div>
-                  </div>
-                  <div className="col-md-4">
-                    <div className="info-field">
-                      <label>📍 DEPARTAMENTO</label>
-                      <div className="readonly-input form-control">{player.departamento || 'No especificado'}</div>
-                    </div>
-                  </div>
-                  <div className="col-md-4">
-                    <div className="info-field">
-                      <label>🏙️ CIUDAD</label>
-                      <div className="readonly-input form-control">{player.ciudad || 'No especificado'}</div>
-                    </div>
-                  </div>
-                </div>
 
-                {/* Estado del jugador */}
-                <div className="info-field">
-                  <label>📊 ESTADO</label>
-                  <div className="readonly-input form-control">
-                    <span className={`badge ${player.activo ? 'bg-success' : 'bg-secondary'}`}>
-                      {player.activo ? '✅ ACTIVO' : '❌ INACTIVO'}
-                    </span>
-                  </div>
+            <div className="player-basic-details">
+              <h2 className="player-fullname">{player.nombre} {player.apellido}</h2>
+              <div className="player-info-grid">
+                <div className="player-info-item">
+                  <span className="player-info-label">Documento:</span>
+                  <span className="player-info-value">{player.documento}</span>
+                </div>
+                <div className="player-info-item">
+                  <span className="player-info-label">Edad:</span>
+                  <span className="player-info-value">{calculateAge(player.fecha_nacimiento)} años</span>
+                </div>
+                <div className="player-info-item">
+                  <span className="player-info-label">Nacimiento:</span>
+                  <span className="player-info-value">{formatDate(player.fecha_nacimiento)}</span>
+                </div>
+                <div className="player-info-item">
+                  <span className="player-info-label">Categoría:</span>
+                  <span className="player-info-value">{getCategoriaName()}</span>
+                </div>
+                <div className="player-info-item">
+                  <span className="player-info-label">Escuela:</span>
+                  <span className="player-info-value">{getEscuelaName()}</span>
+                </div>
+                <div className="player-info-item">
+                  <span className="player-info-label">Estado:</span>
+                  <span className={`player-status-badge ${player.activo ? 'active' : 'inactive'}`}>
+                    {player.activo ? '✅ ACTIVO' : '❌ INACTIVO'}
+                  </span>
                 </div>
               </div>
             </div>
           </div>
-          
-          {/* Sección de documentos */}
-          <div className="documents-section mt-4">
-            <h5>📁 DOCUMENTOS ADJUNTOS</h5>
-            <div className="document-buttons">
-              {player.documento_pdf_url ? (
-                <button
-                  className="btn btn-info"
-                  onClick={() => onDocumentOpen(player.documento_pdf_url!, `Documento_${player.documento}.pdf`)}
-                >
-                  📄 Ver Documento PDF
-                </button>
-              ) : (
-                <button className="btn btn-outline-secondary" disabled>
-                  📄 Sin Documento PDF
-                </button>
-              )}
-              
-              {player.registro_civil_url ? (
-                <button
-                  className="btn btn-warning"
-                  onClick={() => onDocumentOpen(player.registro_civil_url!, `Registro_Civil_${player.documento}.pdf`)}
-                >
-                  📋 Ver Registro Civil
-                </button>
-              ) : (
-                <button className="btn btn-outline-secondary" disabled>
-                  📋 Sin Registro Civil
-                </button>
-              )}
-              
-              <button
-                className="btn btn-success"
-                onClick={onDownloadRegister}
-                disabled={!player.documento_pdf_url && !player.registro_civil_url}
-              >
-                ⬇️ Descargar Documentos
-              </button>
-              
-              <button
-                className="btn btn-primary"
-                onClick={onPrint}
-              >
-                🖨️ Imprimir Información
-              </button>
-              
-              <button
-                className="btn btn-secondary"
-                onClick={onDownloadID}
-                disabled={!player.foto_perfil_url}
-              >
-                🆔 Generar Identificación
-              </button>
+
+          {/* Información de ubicación y médica */}
+          <div className="player-readonly-info">
+            <div className="player-info-section">
+              <h4 className="player-section-title">📍 Ubicación</h4>
+              <div className="player-info-grid-readonly">
+                <div className="player-info-item-readonly">
+                  <span className="player-info-label-readonly">País:</span>
+                  <span className="player-info-value-readonly">{player.pais || 'No especificado'}</span>
+                </div>
+                <div className="player-info-item-readonly">
+                  <span className="player-info-label-readonly">Departamento:</span>
+                  <span className="player-info-value-readonly">{player.departamento || 'No especificado'}</span>
+                </div>
+                <div className="player-info-item-readonly">
+                  <span className="player-info-label-readonly">Ciudad:</span>
+                  <span className="player-info-value-readonly">{player.ciudad || 'No especificado'}</span>
+                </div>
+              </div>
             </div>
 
-            {/* Información de documentos disponibles */}
-            <div className="mt-2">
-              <small className="text-muted">
-                Documentos disponibles: 
-                {player.documento_pdf_url && ' 📄 Documento PDF'}
-                {player.registro_civil_url && ' 📋 Registro Civil'}
-                {!player.documento_pdf_url && !player.registro_civil_url && ' Ninguno'}
-              </small>
+            <div className="player-info-section">
+              <h4 className="player-section-title">🏥 Información Médica</h4>
+              <div className="player-info-grid-readonly">
+                <div className="player-info-item-readonly">
+                  <span className="player-info-label-readonly">EPS:</span>
+                  <span className="player-info-value-readonly">{player.eps || 'No especificada'}</span>
+                </div>
+                <div className="player-info-item-readonly">
+                  <span className="player-info-label-readonly">Tipo de EPS:</span>
+                  <span className="player-info-value-readonly">{player.tipo_eps || 'No especificado'}</span>
+                </div>
+              </div>
             </div>
           </div>
-          
-          {/* Información de estado */}
-          <div className="alert alert-info mt-3">
-            <small>
-              <strong>👁️ Modo de solo lectura:</strong> Como administrador, puedes ver toda la información del jugador pero no editarla. 
-              Los entrenadores son responsables de gestionar los datos de sus jugadores.
-            </small>
+
+          {/* Documentos */}
+          <div className="player-documents-section">
+            <h4 className="player-section-title">📁 Documentos</h4>
+            <div className="player-document-buttons">
+              {player.documento_pdf_url && (
+                <button
+                  className="player-doc-btn"
+                  onClick={() => handleDocumentOpen(player.documento_pdf_url!, `Documento_${player.documento}.pdf`)}
+                >
+                  <span className="player-doc-icon">📄</span>
+                  <span className="player-doc-text">Ver Documento de Identidad</span>
+                </button>
+              )}
+              {player.registro_civil_url && (
+                <button
+                  className="player-doc-btn"
+                  onClick={() => handleDocumentOpen(player.registro_civil_url!, `Registro_Civil_${player.documento}.pdf`)}
+                >
+                  <span className="player-doc-icon">📋</span>
+                  <span className="player-doc-text">Ver Registro Civil</span>
+                </button>
+              )}
+              {!player.documento_pdf_url && !player.registro_civil_url && (
+                <p className="player-no-docs">No hay documentos disponibles</p>
+              )}
+            </div>
+          </div>
+
+          {/* Información de administrador */}
+          <div className="admin-info-notice">
+            <div className="admin-notice-content">
+              <span className="admin-notice-icon">👁️</span>
+              <div className="admin-notice-text">
+                <strong>Modo de solo lectura:</strong> Como administrador, puedes ver toda la información del jugador pero no editarla. 
+                Los entrenadores son responsables de gestionar los datos de sus jugadores.
+              </div>
+            </div>
           </div>
         </div>
-        
-        <div className="modal-actions">
-          <button
-            type="button"
-            className="btn btn-secondary action-btn"
-            onClick={onClose}
-          >
+
+        <div className="player-modal-actions">
+          <button className="player-action-btn player-print-btn" onClick={onPrint}>
+            🖨️ Imprimir
+          </button>
+          {(player.documento_pdf_url || player.registro_civil_url) && (
+            <button className="player-action-btn player-download-docs-btn" onClick={handleDownloadDocuments}>
+              📄 Descargar Documentos
+            </button>
+          )}
+          <button className="player-action-btn player-close-action-btn" onClick={onClose}>
             ✕ Cerrar
           </button>
         </div>

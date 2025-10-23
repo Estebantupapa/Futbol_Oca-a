@@ -1,6 +1,6 @@
 import { Jugador, Categoria, Escuela, Pais, Departamento, Ciudad, Usuario } from '../../../../services/supabaseClient';
 import { PlayerFiles } from '../../../../services/supabaseClient';
-import { UploadProgress } from '../hooks/useFileUpload'; // Importa el tipo desde el hook
+import { UploadProgress } from '../hooks/useFileUpload';
 
 export interface PlayerModalProps {
     player: Jugador | null;
@@ -44,7 +44,7 @@ export interface AddPlayerModalProps {
   selectedDepartamentoId: string;
   currentUser: Usuario;
   isUploading: boolean;
-  uploadProgress: UploadProgress; // Usa el tipo definido
+  uploadProgress: UploadProgress;
   fileErrors: {
     foto_perfil?: string;
     documento_pdf?: string;
@@ -61,7 +61,7 @@ export interface AddPlayerModalProps {
 
 export interface PlayerItemProps {
   player: Jugador;
-  selectedCategory: string;
+  selectedCategory: string | null;
   onClick: (player: Jugador) => void;
 }
 
@@ -79,7 +79,7 @@ export interface CoachHeaderProps {
 
 export interface CoachSidebarProps {
   searchTerm: string;
-  selectedCategory: string;
+  selectedCategory: string | null;
   showCategoryDropdown: boolean;
   players: Jugador[];
   filteredPlayers: Jugador[];
