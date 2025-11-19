@@ -26,8 +26,10 @@ import CoachSidebar from './components/CoachSidebar';
 import PlayerModal from './components/PlayerModal';
 import AddPlayerModal from './components/AddPlayerModal';
 import ProfileModal from './components/ProfileModal';
+import ExcelImportModal from '../../ExcelImportModal';
 import DocumentViewer from '../../shared/components/DocumentViewer';
 import { useFileUpload } from './hooks/useFileUpload';
+import { PeaceAndSafeData } from './types/peaceAndSafeTypes'; // NUEVA IMPORTACIÓN
 
 interface DashboardProps {
   onLogout: () => void;
@@ -74,6 +76,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
   const [originalPlayer, setOriginalPlayer] = useState<Jugador | null>(null);
   const [showPlayerModal, setShowPlayerModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showExcelImport, setShowExcelImport] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -119,6 +122,136 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
   }), [currentUser.rol, currentUser.escuela_id]);
 
   const [newPlayer, setNewPlayer] = useState<Partial<Jugador>>(initialPlayerState);
+
+  // NUEVA FUNCIÓN: Manejar generación de Paz y Salvo
+  const handleGeneratePeaceAndSafe = useCallback(async (data: PeaceAndSafeData) => {
+    try {
+      setIsProcessing(true);
+      setProcessingMessage('Generando Paz y Salvo...');
+      
+      console.log('📄 Generando Paz y Salvo:', data);
+      
+      // Aquí implementarías la lógica para generar el PDF
+      // Por ahora mostramos una simulación
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Simular generación de PDF
+      /*const pdfContent = generarContenidoPazYSalvo(data);*/
+      
+      // En una implementación real, aquí:
+      // 1. Generarías el PDF usando una librería como jsPDF
+      // 2. Guardarías el PDF en Google Drive
+      // 3. Guardarías la referencia en Supabase
+      // 4. Descargarías el archivo para el usuario
+      
+      // Por ahora, mostramos el contenido en una nueva ventana
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Paz y Salvo - ${data.playerName}</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+              .header { text-align: center; margin-bottom: 30px; }
+              .content { margin: 20px 0; }
+              .signatures { display: flex; justify-content: space-between; margin-top: 60px; }
+              .signature { text-align: center; width: 45%; }
+              .signature-line { border-top: 1px solid #000; margin: 60px auto 10px; width: 200px; }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <h2>ESCUELA / CLUB DE FÚTBOL ${data.schoolName}</h2>
+              <h3>PAZ Y SALVO DE JUGADOR</h3>
+            </div>
+            <div class="content">
+              <p>La presente certifica que el jugador <strong>${data.playerName}</strong>, 
+              quien pertenece o perteneció a la Escuela/Club <strong>${data.schoolName}</strong>, 
+              se encuentra paz y salvo por todo concepto deportivo, administrativo y disciplinario dentro de nuestra institución.</p>
+              
+              <p>Después de revisar los registros internos y confirmar que no existe pendiente alguna que impida su retiro o traslado, 
+              la escuela otorga plena autorización para que el mencionado jugador pueda retirarse de la institución y continuar 
+              su proceso formativo en cualquier otra escuela, club o entidad deportiva de su elección.</p>
+              
+              <p>Este paz y salvo se expide a solicitud del jugador, con el fin de ser presentado ante la Corporación de Fútbol Ocañero, 
+              entidad encargada de validar y formalizar su traslado conforme a los lineamientos establecidos.</p>
+              
+              <p>Se firma para constancia en la ciudad de Ocaña, a los ${formatDateForDocument(data.currentDate)}.</p>
+            </div>
+            <div class="signatures">
+              <div class="signature">
+                <div class="signature-line"></div>
+                <p><strong>${data.coachName}</strong></p>
+                <p>Entrenador / Director Técnico</p>
+                <p>Escuela ${data.schoolName}</p>
+              </div>
+              <div class="signature">
+                <div class="signature-line"></div>
+                <p><strong>${data.presidentName}</strong></p>
+                <p>Presidente / Representante Legal</p>
+                <p>Escuela ${data.schoolName}</p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
+      }
+      
+      setProcessingMessage('Paz y Salvo generado exitosamente');
+      
+    } catch (error: any) {
+      console.error('Error generando Paz y Salvo:', error);
+      setError(`Error al generar Paz y Salvo: ${error.message || 'Error desconocido'}`);
+    } finally {
+      setTimeout(() => {
+        setIsProcessing(false);
+        setProcessingMessage('');
+      }, 1000);
+    }
+  }, []);
+
+  // Función auxiliar para formatear fecha del documento
+  const formatDateForDocument = (dateString: string) => {
+    const date = new Date(dateString);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day} / ${month} / ${year}`;
+  };
+
+  // Función auxiliar para generar contenido del Paz y Salvo
+ /* const generarContenidoPazYSalvo = (data: PeaceAndSafeData) => {
+    return `
+      ESCUELA / CLUB DE FÚTBOL ${data.schoolName}
+      PAZ Y SALVO DE JUGADOR
+
+      La presente certifica que el jugador ${data.playerName}, quien pertenece o perteneció a la Escuela/Club ${data.schoolName}, 
+      se encuentra paz y salvo por todo concepto deportivo, administrativo y disciplinario dentro de nuestra institución.
+
+      Después de revisar los registros internos y confirmar que no existe pendiente alguna que impida su retiro o traslado, 
+      la escuela otorga plena autorización para que el mencionado jugador pueda retirarse de la institución y continuar 
+      su proceso formativo en cualquier otra escuela, club o entidad deportiva de su elección.
+
+      Este paz y salvo se expide a solicitud del jugador, con el fin de ser presentado ante la Corporación de Fútbol Ocañero, 
+      entidad encargada de validar y formalizar su traslado conforme a los lineamientos establecidos.
+
+      Se firma para constancia en la ciudad de Ocaña, a los ${formatDateForDocument(data.currentDate)}.
+
+      ______________________________
+      ${data.coachName}
+      Entrenador / Director Técnico
+      Escuela ${data.schoolName}
+
+      ______________________________
+      ${data.presidentName}
+      Presidente / Representante Legal
+      Escuela ${data.schoolName}
+    `;
+  };*/
 
   // FUNCIÓN PARA RECARGAR PLAYERS
   const reloadPlayers = useCallback(async () => {
@@ -294,10 +427,16 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
     setShowCategoryDropdown(!showCategoryDropdown);
   }, [showCategoryDropdown]);
 
-  /*const handlePlayerClick = useCallback((player: Jugador) => {
-    setSelectedPlayer(player);
-    setShowPlayerModal(true);
-  }, []);*/
+  const handleOpenExcelImport = useCallback(() => {
+    setShowHamburgerMenu(false);
+    setShowExcelImport(true);
+  }, []);
+
+  // Función para manejar éxito en importación Excel
+  const handleImportSuccess = useCallback(() => {
+    reloadPlayers(); // Recargar jugadores después de importar
+    setShowExcelImport(false);
+  }, [reloadPlayers]);
 
   // Función para cargar el perfil del usuario
   const loadUserProfile = useCallback(async () => {
@@ -1134,161 +1273,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
     }
   }, [selectedPlayer, isProcessing]);
 
-  // FUNCIÓN PDF PARA GENERAR IDENTIFICACIÓN
-  const handleDownloadID = useCallback(async () => {
-    if (!selectedPlayer || isProcessing || !selectedPlayer.foto_perfil_url) return;
-
-    try {
-      setIsProcessing(true);
-      setProcessingMessage('Generando PDF...');
-      
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      // Importar jsPDF correctamente
-      const jsPDFModule = await import('jspdf');
-      const jsPDF = jsPDFModule.default;
-      
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
-      });
-
-      pdf.setFont('helvetica');
-      
-      // Header
-      pdf.setFillColor(52, 152, 219);
-      pdf.rect(0, 0, 210, 25, 'F');
-      
-      pdf.setTextColor(255, 255, 255);
-      pdf.setFontSize(18);
-      pdf.text('CORPORACIÓN DE FUTBOL OCEAÑERO', 105, 12, { align: 'center' });
-      pdf.setFontSize(12);
-      pdf.text('IDENTIFICACIÓN DE JUGADOR', 105, 20, { align: 'center' });
-
-      pdf.setTextColor(0, 0, 0);
-      let yPosition = 40;
-      
-      // Información del jugador
-      pdf.setFontSize(16);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text(`${selectedPlayer.nombre} ${selectedPlayer.apellido}`, 20, yPosition);
-      
-      yPosition += 10;
-      pdf.setFontSize(10);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(`Documento: ${selectedPlayer.documento}`, 20, yPosition);
-      
-      yPosition += 8;
-      pdf.text(`Edad: ${calculateAge(selectedPlayer.fecha_nacimiento)} años`, 20, yPosition);
-      
-      yPosition += 8;
-      pdf.text(`Fecha de Nacimiento: ${formatDate(selectedPlayer.fecha_nacimiento)}`, 20, yPosition);
-      
-      yPosition += 15;
-      
-      // Ubicación
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('UBICACIÓN:', 20, yPosition);
-      yPosition += 8;
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(`País: ${selectedPlayer.pais}`, 20, yPosition);
-      yPosition += 6;
-      pdf.text(`Departamento: ${selectedPlayer.departamento}`, 20, yPosition);
-      yPosition += 6;
-      pdf.text(`Ciudad: ${selectedPlayer.ciudad}`, 20, yPosition);
-      
-      yPosition += 15;
-      
-      // Información deportiva
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('INFORMACIÓN DEPORTIVA:', 20, yPosition);
-      yPosition += 8;
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(`Categoría: ${selectedPlayer.categoria?.nombre || 'Sin categoría'}`, 20, yPosition);
-      yPosition += 6;
-      pdf.text(`Escuela: ${selectedPlayer.escuela?.nombre || 'Sin escuela'}`, 20, yPosition);
-      
-      yPosition += 15;
-      
-      // Información médica
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('INFORMACIÓN MÉDICA:', 20, yPosition);
-      yPosition += 8;
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(`EPS: ${selectedPlayer.eps}`, 20, yPosition);
-      yPosition += 6;
-      pdf.text(`Tipo de EPS: ${selectedPlayer.tipo_eps}`, 20, yPosition);
-
-      // Imagen
-      if (selectedPlayer.foto_perfil_url) {
-        try {
-          setProcessingMessage('Procesando imagen...');
-          
-          const img = new Image();
-          img.crossOrigin = 'anonymous';
-          
-          await new Promise<void>((resolve) => {
-            const timeout = setTimeout(() => resolve(), 3000);
-            
-            img.onload = () => {
-              clearTimeout(timeout);
-              try {
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                
-                const maxWidth = 40;
-                const maxHeight = 50;
-                
-                canvas.width = maxWidth;
-                canvas.height = maxHeight;
-                
-                if (ctx) {
-                  ctx.drawImage(img, 0, 0, maxWidth, maxHeight);
-                  const imgData = canvas.toDataURL('image/jpeg', 0.8);
-                  pdf.addImage(imgData, 'JPEG', 150, 35, maxWidth, maxHeight);
-                }
-                resolve();
-              } catch (err) {
-                resolve();
-              }
-            };
-            
-            img.onerror = () => {
-              clearTimeout(timeout);
-              resolve();
-            };
-            
-            img.src = selectedPlayer.foto_perfil_url!;
-          });
-        } catch (err) {
-          console.warn('Error cargando imagen:', err);
-        }
-      }
-
-      // Footer
-      const now = new Date();
-      pdf.setFontSize(8);
-      pdf.setTextColor(128, 128, 128);
-      pdf.text(`Generado el ${now.toLocaleDateString('es-CO')} a las ${now.toLocaleTimeString('es-CO')}`, 105, 280, { align: 'center' });
-
-      setProcessingMessage('Descargando archivo...');
-      
-      setTimeout(() => {
-        const filename = `ID_${selectedPlayer.nombre}_${selectedPlayer.apellido}_${selectedPlayer.documento}.pdf`;
-        pdf.save(filename);
-        setIsProcessing(false);
-        setProcessingMessage('');
-      }, 100);
-      
-    } catch (error: any) {
-      console.error('Error generando PDF:', error);
-      setError('Error generando el PDF de identificación');
-      setIsProcessing(false);
-      setProcessingMessage('');
-    }
-  }, [selectedPlayer, isProcessing]);
-
   // Función para cerrar modal del jugador
   const closePlayerModal = useCallback(async () => {
     if (isProcessing) {
@@ -1431,6 +1415,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
                 onClearCategory={handleClearCategory}
                 onToggleCategoryDropdown={handleToggleCategoryDropdown}
                 onPlayerClick={handlePlayerClickDetailed}
+                onOpenExcelImport={handleOpenExcelImport}
               />
             </div>
 
@@ -1542,6 +1527,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
         onLoadCiudades={loadCiudadesByDepartamento}
       />
 
+      {/* Excel Import Modal */}
+      <ExcelImportModal
+        isOpen={showExcelImport}
+        onClose={() => setShowExcelImport(false)}
+        onImportSuccess={handleImportSuccess}
+        categorias={categorias}
+        escuelas={escuelas}
+      />
+
       {/* Player Modal */}
       {showPlayerModal && selectedPlayer && (
         <PlayerModal
@@ -1567,11 +1561,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
           onDelete={handleDeletePlayer}
           onInputChange={handleEditInputChange}
           onPrint={handlePrint}
-          onDownloadID={handleDownloadID}
           onDownloadRegister={handleDownloadRegister}
           onDocumentOpen={handleDocumentOpen}
           onLoadEditDepartamentos={loadEditDepartamentosByPais}
           onLoadEditCiudades={loadEditCiudadesByDepartamento}
+          onGeneratePeaceAndSafe={handleGeneratePeaceAndSafe} // NUEVA PROP
         />
       )}
     </div>

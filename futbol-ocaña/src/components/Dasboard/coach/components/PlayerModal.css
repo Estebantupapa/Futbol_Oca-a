@@ -465,3 +465,253 @@
         justify-content: center;
     }
 }
+/* En PlayerModal.css */
+.error-detail {
+    font-size: 11px;
+    color: #666;
+    margin: 5px 0;
+}
+
+.player-photo-loading span {
+    font-size: 12px;
+    color: #666;
+    margin-top: 8px;
+}
+
+/* Estilos para diagnóstico y manejo de errores */
+.player-photo-error {
+    text-align: center;
+    margin-top: 10px;
+    padding: 10px;
+    background: #fff3f3;
+    border: 1px solid #ffcdd2;
+    border-radius: 8px;
+}
+
+.player-photo-error p {
+    color: #d32f2f;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.error-detail {
+    color: #666;
+    font-size: 12px;
+    margin-bottom: 12px;
+}
+
+.permission-steps {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 12px;
+    margin: 10px 0;
+    text-align: left;
+}
+
+.permission-steps h5 {
+    margin: 0 0 8px 0;
+    color: #495057;
+    font-size: 14px;
+}
+
+.permission-steps ol {
+    margin: 0;
+    padding-left: 20px;
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.permission-steps li {
+    margin-bottom: 4px;
+}
+
+.diagnostic-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+
+.retry-btn {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.retry-btn:hover {
+    background: #0056b3;
+}
+
+.diagnostic-btn {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.diagnostic-btn:hover {
+    background: #545b62;
+}
+
+.drive-link-btn {
+    background: #4285f4;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 12px;
+    display: inline-block;
+}
+
+.drive-link-btn:hover {
+    background: #3367d6;
+    color: white;
+    text-decoration: none;
+}
+
+.diagnostic-info {
+    background: #e8f4fd;
+    border: 1px solid #b3e0ff;
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 10px;
+    text-align: left;
+}
+
+.diagnostic-info h5 {
+    margin: 0 0 8px 0;
+    color: #0066cc;
+    font-size: 14px;
+}
+
+.diagnostic-info p {
+    margin: 4px 0;
+    font-size: 12px;
+    color: #333;
+}
+
+.diagnostic-info ul {
+    margin: 4px 0;
+    padding-left: 16px;
+    font-size: 12px;
+    color: #666;
+}
+
+.diagnostic-info li {
+    margin-bottom: 2px;
+}
+
+.player-photo-loading span {
+    font-size: 12px;
+    color: #666;
+    margin-top: 8px;
+}
+
+.player-photo-fallback {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    background: #f8f9fa;
+    border: 2px dashed #dee2e6;
+    border-radius: 8px;
+    color: #6c757d;
+    position: relative;
+}
+
+.fallback-icon {
+    font-size: 48px;
+    margin-bottom: 8px;
+}
+
+.fallback-text {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.loading-spinner {
+    width: 30px;
+    height: 30px;
+    border: 3px solid #e0e0e0;
+    border-top: 3px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 10px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.player-changes-indicator {
+    background: #ffc107;
+    color: #000;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    margin-left: 10px;
+}
+
+.document-opened-indicator {
+    background: #28a745;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    margin-left: 10px;
+}
+
+/* Estilos para el botón de Paz y Salvo */
+.player-peace-safe-btn {
+    background: #ffc107 !important;
+    color: #000 !important;
+}
+
+.player-peace-safe-btn:hover {
+    background: #e0a800 !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
+}
+
+/* Estilos para la vista previa del Paz y Salvo */
+.peace-safe-preview {
+    font-family: 'Times New Roman', serif;
+    font-size: 14px;
+    line-height: 1.4;
+    background: white;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.peace-safe-preview p {
+    margin-bottom: 12px;
+    text-align: justify;
+}
+
+.peace-safe-preview .border-top {
+    border-top: 1px solid #000 !important;
+    width: 200px;
+    margin: 0 auto;
+}
+
+/* Asegurar que los modales se superpongan correctamente */
+.modal {
+    z-index: 10001;
+}
+
+.modal-backdrop {
+    z-index: 10000;
+}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import { supabase } from '../../../services/supabaseClient';
 import '../../Dashboard.css';
 import { 
   Usuario, 
@@ -15,6 +16,8 @@ import { getAdminStats, createAdmin, createCoach, createSchool } from '../../../
 import AdminHeader from './AdminHeader';
 import AdminSidebar from './AdminSidebar';
 import AdminPlayerModal from './AdminPlayerModal';
+import PeaceAndSafeModal from './PeaceAndSafeModal';
+import EditPlayerModal from './EditPlayerModal';
 import AddAdminModal from './AddAdminModal';
 import AddCoachModal from './AddCoachModal';
 import AddSchoolModal from './AddSchoolModal';
@@ -57,9 +60,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, currentUser }
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showPlayerModal, setShowPlayerModal] = useState(false);
   const [showDocumentActionsModal, setShowDocumentActionsModal] = useState(false);
+  const [showPeaceAndSafeModal, setShowPeaceAndSafeModal] = useState(false);
+  const [showEditPlayerModal, setShowEditPlayerModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
   // Estados para jugador seleccionado
   const [selectedPlayer, setSelectedPlayer] = useState<Jugador | null>(null);
+  const [playerToDelete, setPlayerToDelete] = useState<Jugador | null>(null);
   const [userProfile, setUserProfile] = useState<Usuario | null>(null);
 
   // Estados para documentos
@@ -211,6 +218,80 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, currentUser }
     setShowPlayerModal(true);
   }, []);
 
+  // NUEVOS HANDLERS PARA LAS FUNCIONALIDADES AGREGADAS
+  /*const handleShowPeaceAndSafe = useCallback((player: Jugador) => {
+    setSelectedPlayer(player);
+    setShowPeaceAndSafeModal(true);
+  }, []);]*/
+
+  /*const handleEditPlayer = useCallback((player: Jugador) => {
+    setSelectedPlayer(player);
+    setShowEditPlayerModal(true);
+  }, []);*/
+
+  const handleDeletePlayer = useCallback((player: Jugador) => {
+    setPlayerToDelete(player);
+    setShowDeleteConfirm(true);
+  }, []);
+
+  const confirmDeletePlayer = useCallback(async () => {
+    if (!playerToDelete) return;
+
+    try {
+      setIsProcessing(true);
+      const { error } = await supabase
+        .from('jugadores')
+        .delete()
+        .eq('id', playerToDelete.id);
+
+      if (error) throw error;
+
+      // Actualizar la lista de jugadores
+      setPlayers(players.filter(p => p.id !== playerToDelete.id));
+      setShowDeleteConfirm(false);
+      setPlayerToDelete(null);
+      
+      // Recargar estadísticas
+      const statsResult = await getAdminStats();
+      if (!statsResult.error) {
+        setStats(statsResult);
+      }
+      
+      alert('Jugador eliminado correctamente');
+    } catch (error: any) {
+      console.error('Error deleting player:', error);
+      setError('Error al eliminar el jugador');
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [playerToDelete, players]);
+
+  const handleUpdatePlayerSchool = useCallback(async (playerId: string, escuelaId: string) => {
+    try {
+      setIsProcessing(true);
+      const { error } = await supabase
+        .from('jugadores')
+        .update({ escuela_id: escuelaId })
+        .eq('id', playerId);
+
+      if (error) throw error;
+
+      // Actualizar la lista de jugadores
+      setPlayers(players.map(player => 
+        player.id === playerId 
+          ? { ...player, escuela_id: escuelaId }
+          : player
+      ));
+
+      alert('Escuela actualizada correctamente');
+    } catch (error: any) {
+      console.error('Error updating player school:', error);
+      throw new Error('Error al actualizar la escuela del jugador');
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [players]);
+
   // Handlers para documentos
   const handleDocumentOpen = useCallback((url: string, filename: string) => {
     setDocumentViewer({
@@ -285,11 +366,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, currentUser }
       setIsProcessing(false);
     }
   }, [selectedPlayer, isProcessing]);
-
-  // Nuevos handlers para documentos en modal
-  /*const handleOpenDocumentActions = useCallback(() => {
-    setShowDocumentActionsModal(true);
-  }, []);*/
 
   const handleCloseDocumentActions = useCallback(() => {
     setShowDocumentActionsModal(false);
@@ -563,7 +639,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, currentUser }
                             <li>✅ Crear y asignar entrenadores</li>
                             <li>✅ Ver estadísticas generales</li>
                             <li>✅ Gestionar documentos de jugadores</li>
-                            <li>❌ <strong>No puede</strong> editar/eliminar jugadores</li>
+                            <li>✅ Editar escuela de jugadores</li>
+                            <li>✅ Generar Paz y Salvo (PDF)</li>
+                            <li>✅ Eliminar jugadores</li>
                             <li>❌ <strong>No puede</strong> agregar jugadores directamente</li>
                           </ul>
                         </div>
@@ -579,6 +657,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, currentUser }
                             <li>Los entrenadores agregan jugadores 👥</li>
                             <li>Supervisar todo el sistema 👁️</li>
                             <li>Gestionar documentos 📁</li>
+                            <li>Editar escuelas de jugadores ✏️</li>
+                            <li>Generar certificados 📄</li>
                           </ol>
                         </div>
                       </div>
@@ -609,7 +689,63 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, currentUser }
           onDownloadID={handleDownloadID}
           onDownloadRegister={handleDownloadRegister}
           onDocumentOpen={handleDocumentOpen}
+          onDeletePlayer={handleDeletePlayer}
+          onUpdatePlayerSchool={handleUpdatePlayerSchool}
         />
+      )}
+
+      {/* NUEVOS MODALES AGREGADOS */}
+      <PeaceAndSafeModal
+        show={showPeaceAndSafeModal}
+        onHide={() => setShowPeaceAndSafeModal(false)}
+        player={selectedPlayer}
+      />
+
+      <EditPlayerModal
+        show={showEditPlayerModal}
+        onHide={() => setShowEditPlayerModal(false)}
+        player={selectedPlayer}
+        escuelas={escuelas}
+        onSave={handleUpdatePlayerSchool}
+      />
+
+      {/* Modal de confirmación para eliminar */}
+      {showDeleteConfirm && (
+        <div className="modal show d-block" tabIndex={-1} style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Confirmar Eliminación</h5>
+                <button 
+                  type="button" 
+                  className="btn-close" 
+                  onClick={() => setShowDeleteConfirm(false)}
+                ></button>
+              </div>
+              <div className="modal-body">
+                ¿Estás seguro de que deseas eliminar al jugador <strong>{playerToDelete?.nombre} {playerToDelete?.apellido}</strong>?
+                <br />
+                <small className="text-muted">Esta acción no se puede deshacer.</small>
+              </div>
+              <div className="modal-footer">
+                <button 
+                  className="btn btn-secondary" 
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={isProcessing}
+                >
+                  Cancelar
+                </button>
+                <button 
+                  className="btn btn-danger" 
+                  onClick={confirmDeletePlayer}
+                  disabled={isProcessing}
+                >
+                  {isProcessing ? 'Eliminando...' : 'Eliminar'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Document Viewer */}

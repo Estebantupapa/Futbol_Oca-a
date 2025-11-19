@@ -18,7 +18,7 @@ const CoachHeader: React.FC<CoachHeaderProps> = ({
   showHamburgerMenu,
   onToggleDarkMode,
   onToggleHamburgerMenu,
-  onViewProfile,
+  /*onViewProfile,*/
   onAddPlayer,
   onLogout,
   hamburgerMenuRef
@@ -91,14 +91,6 @@ const CoachHeader: React.FC<CoachHeaderProps> = ({
                           </div>
                         )}
                       </div>
-                      
-                      <button 
-                        className="btn btn-sm w-100 mb-1 text-start"
-                        onClick={onViewProfile}
-                        aria-label="Ver mi perfil"
-                      >
-                        👤 Ver mi perfil
-                      </button>
 
                       <button
                         className="btn btn-primary w-100 mt-2 mb-2"

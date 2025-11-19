@@ -62,6 +62,23 @@ export interface AddSchoolModalProps {
 
 export interface AdminPlayerItemProps {
   player: Jugador;
-  selectedCategory: string;
   onClick: (player: Jugador) => void;
+  // NUEVAS PROPS AGREGADAS:
+  onShowPeaceAndSafe: (player: Jugador) => void;
+  onEditPlayer: (player: Jugador) => void;
+  onDeletePlayer: (player: Jugador) => void;
+}
+
+// En adminTypes.ts, actualiza AdminPlayerModalProps:
+export interface AdminPlayerModalProps {
+  player: Jugador;
+  categorias: Categoria[];
+  escuelas: Escuela[];
+  onClose: () => void;
+  onPrint: () => void;
+  onDownloadID: () => void;
+  onDownloadRegister: () => void;
+  onDocumentOpen: (url: string, filename: string) => void;
+  onDeletePlayer: (player: Jugador) => void;
+  onUpdatePlayerSchool: (playerId: string, escuelaId: string) => Promise<void>;
 }

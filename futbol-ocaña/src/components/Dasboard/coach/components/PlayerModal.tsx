@@ -1,5 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { PlayerModalProps } from '../types/coachTypes';
+import { 
+    /*convertGoogleDriveUrl,*/ 
+    getGoogleDriveImageUrls, 
+    getGoogleDriveUrlType,
+    diagnoseGoogleDriveUrl,
+    getGoogleDriveFileId 
+} from '../../../../utils/googleDriveUtils';
+import PeaceAndSafeModal from './PeaceAndSafeModal';
+import { PeaceAndSafeData } from '../types/peaceAndSafeTypes';
 import './PlayerModal.css';
 
 const PlayerModal: React.FC<PlayerModalProps> = ({
@@ -7,6 +16,7 @@ const PlayerModal: React.FC<PlayerModalProps> = ({
     originalPlayer,
     isEditing,
     isSaving,
+    documentOpened,
     categorias,
     escuelas,
     editPaises,
@@ -21,18 +31,31 @@ const PlayerModal: React.FC<PlayerModalProps> = ({
     onDelete,
     onInputChange,
     onPrint,
-    //onDownloadID,
     onDownloadRegister,
     onDocumentOpen,
     onLoadEditDepartamentos,
-    onLoadEditCiudades
+    onLoadEditCiudades,
+    onGeneratePeaceAndSafe
 }) => {
     if (!player) return null;
 
-    const [/*localEditPais*/, setLocalEditPais] = useState('');
-    const [/*localEditDepartamento*/, setLocalEditDepartamento] = useState('');
+    const [localEditPais, setLocalEditPais] = useState('');
+    const [localEditDepartamento, setLocalEditDepartamento] = useState('');
     const [imageError, setImageError] = useState(false);
     const [imageLoaded, setImageLoaded] = useState(false);
+    const [convertedImageUrl, setConvertedImageUrl] = useState('');
+    const [imageUrls, setImageUrls] = useState<string[]>([]);
+    const [currentUrlIndex, setCurrentUrlIndex] = useState(0);
+    const [urlType, setUrlType] = useState<'file' | 'folder' | 'unknown'>('unknown');
+    const [diagnosticInfo, setDiagnosticInfo] = useState<{
+        isValid: boolean;
+        fileId: string | null;
+        error: string;
+        suggestions: string[];
+        urlType: 'file' | 'folder' | 'unknown';
+    } | null>(null);
+    const [showDiagnostic, setShowDiagnostic] = useState(false);
+    const [showPeaceAndSafeModal, setShowPeaceAndSafeModal] = useState(false); // NUEVO ESTADO
 
     useEffect(() => {
         if (player.pais) {
@@ -41,10 +64,66 @@ const PlayerModal: React.FC<PlayerModalProps> = ({
         if (player.departamento) {
             setLocalEditDepartamento(player.departamento);
         }
+        
         // Reset image states cuando cambia el jugador
         setImageError(false);
         setImageLoaded(false);
+        setCurrentUrlIndex(0);
+        setShowDiagnostic(false);
+        setDiagnosticInfo(null);
+        
+        // Verificar tipo de URL y generar URLs
+        if (player.foto_perfil_url) {
+            const type = getGoogleDriveUrlType(player.foto_perfil_url);
+            setUrlType(type);
+            console.log('📋 Tipo de URL detectado:', type);
+            
+            if (type === 'folder') {
+                console.error('❌ URL de carpeta detectada - no se puede cargar imagen');
+                setImageError(true);
+                return;
+            }
+            
+            const urls = getGoogleDriveImageUrls(player.foto_perfil_url);
+            setImageUrls(urls);
+            if (urls.length > 0) {
+                console.log('🖼️ URLs de imagen generadas:', urls);
+                setConvertedImageUrl(urls[0]);
+            } else {
+                setImageError(true);
+            }
+        } else {
+            setImageUrls([]);
+            setConvertedImageUrl('');
+        }
     }, [player]);
+
+    useEffect(() => {
+        if (documentOpened) {
+            console.log('📄 Documento abierto');
+        }
+    }, [documentOpened]);
+
+    // NUEVA FUNCIÓN: Manejar generación de Paz y Salvo
+    const handleGeneratePeaceAndSafe = (data: PeaceAndSafeData) => {
+        console.log('📄 Generando Paz y Salvo:', data);
+        if (onGeneratePeaceAndSafe) {
+            onGeneratePeaceAndSafe(data);
+        } else {
+            // Fallback: generar PDF directamente
+            generatePeaceAndSafePDF(data);
+        }
+    };
+
+    // NUEVA FUNCIÓN: Generar PDF de Paz y Salvo (placeholder)
+    const generatePeaceAndSafePDF = (data: PeaceAndSafeData) => {
+        // Aquí implementarías la generación real del PDF
+        // Por ahora mostramos una alerta
+        alert(`Paz y Salvo generado para ${data.playerName}\n\nSe guardará en Google Drive y se descargará automáticamente.`);
+        
+        // En una implementación real, aquí llamarías a un servicio para generar el PDF
+        // y guardarlo en Google Drive/Supabase
+    };
 
     const calculateAge = (birthDate: string) => {
         const today = new Date();
@@ -96,16 +175,72 @@ const PlayerModal: React.FC<PlayerModalProps> = ({
         );
     };
 
-    const handleDocumentOpen = (url: string, filename: string) => {
-        if (onDocumentOpen) {
-            onDocumentOpen(url, filename);
+    const handleImageError = () => {
+        console.error(`❌ Error cargando la imagen (intento ${currentUrlIndex + 1}/${imageUrls.length}):`, convertedImageUrl);
+        
+        // Intentar con la siguiente URL
+        if (currentUrlIndex < imageUrls.length - 1) {
+            const nextIndex = currentUrlIndex + 1;
+            console.log(`🔄 Intentando con siguiente URL (${nextIndex + 1}/${imageUrls.length}):`, imageUrls[nextIndex]);
+            setCurrentUrlIndex(nextIndex);
+            setConvertedImageUrl(imageUrls[nextIndex]);
+            setImageError(false);
+            setImageLoaded(false);
+        } else {
+            // No hay más URLs para probar
+            setImageError(true);
+            setImageLoaded(false);
+            console.log('❌ Todas las URLs fallaron');
         }
+    };
+
+    const handleImageLoad = () => {
+        console.log(`✅ Imagen cargada correctamente (URL ${currentUrlIndex + 1}/${imageUrls.length}):`, convertedImageUrl);
+        setImageLoaded(true);
+        setImageError(false);
     };
 
     // Función para forzar la recarga de la imagen
     const reloadImage = () => {
+        console.log('🔄 Reintentando cargar imagen desde el principio...');
         setImageError(false);
         setImageLoaded(false);
+        setCurrentUrlIndex(0);
+        setShowDiagnostic(false);
+        if (imageUrls.length > 0) {
+            setConvertedImageUrl(imageUrls[0] + '&t=' + Date.now());
+        }
+    };
+
+    // Función para ejecutar diagnóstico
+    const runDiagnostic = async () => {
+        if (player.foto_perfil_url) {
+            console.log('🔍 Ejecutando diagnóstico...');
+            setShowDiagnostic(true);
+            const diagnosis = await diagnoseGoogleDriveUrl(player.foto_perfil_url);
+            setDiagnosticInfo(diagnosis);
+            console.log('📊 Resultado diagnóstico:', diagnosis);
+        }
+    };
+
+    // Función para manejar documentos - CORREGIDA
+    const handleDocumentOpen = (url: string, filename: string) => {
+        console.log('📄 Abriendo documento en modal interno:', filename);
+        
+        // Llamar al callback para abrir el DocumentViewer modal
+        if (onDocumentOpen) {
+            onDocumentOpen(url, filename);
+        } else {
+            console.warn('❌ onDocumentOpen callback no disponible');
+            // Fallback: abrir en ventana externa si no hay callback
+            const fileId = getGoogleDriveFileId(url);
+            const viewerUrl = fileId 
+                ? `https://drive.google.com/file/d/${fileId}/view`
+                : url;
+            window.open(viewerUrl, '_blank', 'noopener,noreferrer');
+        }
+        
+        console.log('✅ Documento abierto en modal interno:', filename);
     };
 
     return (
@@ -115,6 +250,7 @@ const PlayerModal: React.FC<PlayerModalProps> = ({
                     <h3 className="player-modal-title">
                         {isEditing ? 'EDITAR JUGADOR' : 'INFORMACIÓN DEL JUGADOR'}
                         {isEditing && hasChanges() && <span className="player-changes-indicator">* Cambios pendientes</span>}
+                        {documentOpened && <span className="document-opened-indicator">📄 Documento abierto</span>}
                     </h3>
                     <button className="player-close-btn" onClick={onClose}>✕</button>
                 </div>
@@ -123,30 +259,95 @@ const PlayerModal: React.FC<PlayerModalProps> = ({
                     {/* Header con foto e información básica */}
                     <div className="player-header-info">
                         <div className="player-photo-wrapper">
-                            {player.foto_perfil_url && !imageError ? (
+                            {convertedImageUrl && !imageError ? (
                                 <>
                                     <img 
-                                        src={`${player.foto_perfil_url}?t=${Date.now()}`} 
+                                        src={convertedImageUrl}
                                         alt={`${player.nombre} ${player.apellido}`}
                                         className="player-main-photo"
-                                        onError={() => {
-                                            console.error("Error cargando la imagen:", player.foto_perfil_url);
-                                            setImageError(true);
-                                        }}
-                                        onLoad={() => setImageLoaded(true)}
+                                        onError={handleImageError}
+                                        onLoad={handleImageLoad}
                                         style={{ display: imageLoaded ? 'block' : 'none' }}
                                     />
                                     {!imageLoaded && !imageError && (
-                                        <div className="player-photo-loading">Cargando...</div>
+                                        <div className="player-photo-loading">
+                                            <div className="loading-spinner"></div>
+                                            <span>
+                                                Cargando imagen... ({currentUrlIndex + 1}/{imageUrls.length})
+                                            </span>
+                                        </div>
                                     )}
                                 </>
                             ) : (
                                 <div className="player-photo-fallback">
-                                    👤
+                                    <div className="fallback-icon">👤</div>
+                                    <span className="fallback-text">
+                                        {player.nombre.charAt(0)}{player.apellido.charAt(0)}
+                                    </span>
                                     {player.foto_perfil_url && imageError && (
                                         <div className="player-photo-error">
-                                            <p>Error al cargar la imagen</p>
-                                            <button onClick={reloadImage}>Reintentar</button>
+                                            {urlType === 'folder' ? (
+                                                <>
+                                                    <p>❌ URL incorrecta</p>
+                                                    <p className="error-detail">
+                                                        Tienes una URL de carpeta, no de archivo
+                                                    </p>
+                                                    <div className="permission-steps">
+                                                        <h5>Para obtener la URL correcta:</h5>
+                                                        <ol>
+                                                            <li>Abre la carpeta en Google Drive</li>
+                                                            <li>Haz doble click en la imagen</li>
+                                                            <li>Click en los 3 puntos (⋮) arriba a la derecha</li>
+                                                            <li>Selecciona "Obtener enlace"</li>
+                                                            <li>Copia esa URL y actualiza el Excel</li>
+                                                        </ol>
+                                                    </div>
+                                                    <a 
+                                                        href={player.foto_perfil_url} 
+                                                        target="_blank" 
+                                                        rel="noopener noreferrer"
+                                                        className="drive-link-btn"
+                                                    >
+                                                        🔗 Abrir carpeta en Drive
+                                                    </a>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <p>❌ No se pudo cargar la imagen</p>
+                                                    <p className="error-detail">
+                                                        Intentadas {imageUrls.length} URLs
+                                                    </p>
+                                                    <div className="diagnostic-buttons">
+                                                        <button className="retry-btn" onClick={reloadImage}>
+                                                            🔄 Reintentar
+                                                        </button>
+                                                        <button className="diagnostic-btn" onClick={runDiagnostic}>
+                                                            🔍 Diagnosticar
+                                                        </button>
+                                                        <a 
+                                                            href={player.foto_perfil_url} 
+                                                            target="_blank" 
+                                                            rel="noopener noreferrer"
+                                                            className="drive-link-btn"
+                                                        >
+                                                            🔗 Abrir en Drive
+                                                        </a>
+                                                    </div>
+                                                    {showDiagnostic && diagnosticInfo && (
+                                                        <div className="diagnostic-info">
+                                                            <h5>Información de diagnóstico:</h5>
+                                                            <p><strong>File ID:</strong> {diagnosticInfo.fileId || 'No encontrado'}</p>
+                                                            <p><strong>Error:</strong> {diagnosticInfo.error || 'Ninguno'}</p>
+                                                            <p><strong>Sugerencias:</strong></p>
+                                                            <ul>
+                                                                {diagnosticInfo.suggestions.map((suggestion: string, index: number) => (
+                                                                    <li key={index}>{suggestion}</li>
+                                                                ))}
+                                                            </ul>
+                                                        </div>
+                                                    )}
+                                                </>
+                                            )}
                                         </div>
                                     )}
                                 </div>
@@ -351,7 +552,7 @@ const PlayerModal: React.FC<PlayerModalProps> = ({
                             {player.documento_pdf_url && (
                                 <button
                                     className="player-doc-btn"
-                                    onClick={() => handleDocumentOpen(player.documento_pdf_url!, 'Documento.pdf')}
+                                    onClick={() => handleDocumentOpen(player.documento_pdf_url!, 'Documento de Identidad')}
                                 >
                                     <span className="player-doc-icon">📄</span>
                                     <span className="player-doc-text">Ver Documento de Identidad</span>
@@ -360,7 +561,7 @@ const PlayerModal: React.FC<PlayerModalProps> = ({
                             {player.registro_civil_url && (
                                 <button
                                     className="player-doc-btn"
-                                    onClick={() => handleDocumentOpen(player.registro_civil_url!, 'Registro_Civil.pdf')}
+                                    onClick={() => handleDocumentOpen(player.registro_civil_url!, 'Registro Civil')}
                                 >
                                     <span className="player-doc-icon">📋</span>
                                     <span className="player-doc-text">Ver Registro Civil</span>
@@ -381,6 +582,13 @@ const PlayerModal: React.FC<PlayerModalProps> = ({
                             </button>
                             <button className="player-action-btn player-print-btn" onClick={onPrint}>
                                 🖨️ Imprimir
+                            </button>
+                            {/* NUEVO BOTÓN: Generar Paz y Salvo */}
+                            <button 
+                                className="player-action-btn player-peace-safe-btn" 
+                                onClick={() => setShowPeaceAndSafeModal(true)}
+                            >
+                                📄 Generar Paz y Salvo
                             </button>
                             {(player.documento_pdf_url || player.registro_civil_url) && (
                                 <button className="player-action-btn player-download-docs-btn" onClick={onDownloadRegister}>
@@ -421,6 +629,18 @@ const PlayerModal: React.FC<PlayerModalProps> = ({
                     )}
                 </div>
             </div>
+
+            {/* Modal de Paz y Salvo */}
+            <PeaceAndSafeModal
+                isOpen={showPeaceAndSafeModal}
+                onClose={() => setShowPeaceAndSafeModal(false)}
+                onGenerate={handleGeneratePeaceAndSafe}
+                playerData={{
+                    name: player.nombre + ' ' + player.apellido,
+                    schoolName: escuelas.find(esc => esc.id === player.escuela_id)?.nombre || 'Sin escuela',
+                    id: player.id
+                }}
+            />
         </div>
     );
 };

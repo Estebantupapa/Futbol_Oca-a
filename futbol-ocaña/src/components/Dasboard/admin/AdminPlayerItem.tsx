@@ -6,7 +6,10 @@ interface AdminPlayerItemProps {
   onClick: (player: Jugador) => void;
 }
 
-const AdminPlayerItem: React.FC<AdminPlayerItemProps> = ({ player, onClick }) => {
+const AdminPlayerItem: React.FC<AdminPlayerItemProps> = ({ 
+  player, 
+  onClick
+}) => {
   return (
     <div 
       className="player-item"

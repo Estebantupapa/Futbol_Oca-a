@@ -12,7 +12,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   filteredPlayers,
   categorias,
   escuelas,
-  //currentUser,
+  /*currentUser,*/
   loading,
   onSearchChange,
   onCategorySelect,
@@ -36,8 +36,15 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   };
 
   return (
-    <div className="sidebar">
-      <div className="search-section">
+    <div className="sidebar" style={{ 
+      height: '100vh', 
+      overflowY: 'auto',
+      overflowX: 'hidden',
+      display: 'flex',
+      flexDirection: 'column'
+    }}>
+      {/* Sección de búsqueda y filtros - Fija */}
+      <div className="search-section" style={{ flexShrink: 0 }}>
         <div className="d-flex align-items-center mb-3">
           {/* Botón de categorías */}
           <div className="position-relative me-2">
@@ -210,7 +217,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
         </div>
       </div>
 
-      <div className="players-list">
+      {/* Lista de jugadores - Con scroll */}
+      <div className="players-list" style={{ 
+        flex: 1, 
+        overflowY: 'auto',
+        minHeight: 0
+      }}>
         {filteredPlayers.map((player) => (
           <AdminPlayerItem
             key={player.id}

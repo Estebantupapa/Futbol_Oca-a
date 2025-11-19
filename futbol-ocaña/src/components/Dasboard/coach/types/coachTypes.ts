@@ -1,6 +1,7 @@
 import { Jugador, Categoria, Escuela, Pais, Departamento, Ciudad, Usuario } from '../../../../services/supabaseClient';
 import { PlayerFiles } from '../../../../services/supabaseClient';
 import { UploadProgress } from '../hooks/useFileUpload';
+import { PeaceAndSafeData } from './peaceAndSafeTypes';
 
 export interface PlayerModalProps {
     player: Jugador | null;
@@ -25,13 +26,15 @@ export interface PlayerModalProps {
     onDelete: (playerId: string) => void;
     onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
     onPrint: () => void;
-    onDownloadID: () => void;
+    onDownloadID?: () => void;
     onDownloadRegister: () => void;
     onDocumentOpen: (url: string, filename: string) => void;
     onLoadEditDepartamentos: (paisId: string) => Promise<void>;
     onLoadEditCiudades: (departamentoId: string) => Promise<void>;
+    onGeneratePeaceAndSafe?: (data: PeaceAndSafeData) => void; // NUEVA PROPIEDAD
 }
 
+// ... (el resto de las interfaces se mantienen igual)
 export interface AddPlayerModalProps {
   show: boolean;
   newPlayer: Partial<Jugador>;

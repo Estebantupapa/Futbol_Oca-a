@@ -7,7 +7,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({
   showHamburgerMenu,
   onToggleDarkMode,
   onToggleHamburgerMenu,
-  onViewProfile,
+  /*onViewProfile,*/
   onAddAdmin,
   onAddCoach,
   onAddSchool,
@@ -66,13 +66,6 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({
                         <div className="small text-muted">{currentUser.email}</div>
                         <div className="small text-primary">Administrador</div>
                       </div>
-                      
-                      <button 
-                        className="btn btn-sm w-100 mb-1 text-start"
-                        onClick={onViewProfile}
-                      >
-                        👤 Ver mi perfil
-                      </button>
 
                       <hr className="my-2" />
                       
