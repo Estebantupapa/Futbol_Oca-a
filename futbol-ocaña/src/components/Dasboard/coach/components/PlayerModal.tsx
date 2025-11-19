@@ -39,8 +39,8 @@ const PlayerModal: React.FC<PlayerModalProps> = ({
 }) => {
     if (!player) return null;
 
-    const [localEditPais, setLocalEditPais] = useState('');
-    const [localEditDepartamento, setLocalEditDepartamento] = useState('');
+    /*const [localEditPais, setLocalEditPais] = useState('');
+    const [/*localEditDepartamento, setLocalEditDepartamento] = useState('');*/
     const [imageError, setImageError] = useState(false);
     const [imageLoaded, setImageLoaded] = useState(false);
     const [convertedImageUrl, setConvertedImageUrl] = useState('');
@@ -58,12 +58,12 @@ const PlayerModal: React.FC<PlayerModalProps> = ({
     const [showPeaceAndSafeModal, setShowPeaceAndSafeModal] = useState(false); // NUEVO ESTADO
 
     useEffect(() => {
-        if (player.pais) {
+        /*if (player.pais) {
             setLocalEditPais(player.pais);
         }
         if (player.departamento) {
             setLocalEditDepartamento(player.departamento);
-        }
+        }*/
         
         // Reset image states cuando cambia el jugador
         setImageError(false);
